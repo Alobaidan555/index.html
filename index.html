@@ -763,7 +763,7 @@
     // ----------------------------------------------------------------------------------
         const MASTER_USERNAME = 'admin';
         const MASTER_PASSWORD = 'master123';
-        const PATH_PREFIX = 'index.html#'; // 🆕 هذا هو الثابت الجديد لدعم الروابط الفريدة
+        const PATH_PREFIX = 'index.html#'; 
         
         let allData = [];
         let currentEntityId = null;
@@ -894,7 +894,20 @@
                     currentEntityId = urlEntityId;
                     showEntityPage();
                     showToast('تم استعادة الصفحة والجهة من الرابط.', false);
-                } else if (targetPageId.includes('Page') && savedEntityId) {
+                } else if (targetPageId === 'quizzesPage' && urlEntityId) {
+                    // 🆕 حالة خاصة للروابط المباشرة لقائمة مسابقات الجهة
+                    currentEntityId = urlEntityId;
+                    document.getElementById('quizzesBackBtn').onclick = goBackToEntity;
+                    renderQuizzesList();
+                    showPage('quizzesPage');
+                } else if (targetPageId === 'quizzesPage' && !urlEntityId) {
+                    // 🆕 حالة خاصة للروابط المباشرة لقائمة المسابقات العامة
+                    currentEntityId = null;
+                    document.getElementById('quizzesBackBtn').onclick = goToHome;
+                    renderQuizzesList();
+                    showPage('quizzesPage');
+                }
+                else if (targetPageId.includes('Page') && savedEntityId) {
                     currentEntityId = savedEntityId;
                     showPage(targetPageId);
                     showToast('تم استعادة آخر صفحة كنت عليها.', false);
@@ -935,6 +948,11 @@
                     const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
                     if (entity) document.getElementById('entityPageTitle').textContent = entity.entity_name;
                     updateEnrollmentCardVisibility(); 
+                } else if (targetPageId === 'quizzesPage') { 
+                    // 🆕 تحديث حالة قائمة المسابقات عند الرجوع
+                    currentEntityId = urlEntityId;
+                    document.getElementById('quizzesBackBtn').onclick = currentEntityId ? goBackToEntity : goToHome;
+                    renderQuizzesList();
                 }
                 
                 if (targetPageId === 'superAdminPage') renderEntitiesList();
@@ -2418,13 +2436,15 @@
         function showQuizzesSection() {
             document.getElementById('quizzesBackBtn').onclick = goBackToEntity;
             renderQuizzesList();
-            showPage('quizzesPage');
+            // 🆕 التعديل: استخدام currentEntityId كـ extraId للروابط المخصصة للجهة
+            showPage('quizzesPage', currentEntityId);
         }
 
         function showPublicQuizzes() {
             document.getElementById('quizzesBackBtn').onclick = goToHome;
             currentEntityId = null;
             renderQuizzesList();
+            // 🆕 التعديل: لا نمرر extraId للمسابقات العامة
             showPage('quizzesPage');
         }
 
@@ -2435,8 +2455,10 @@
             let quizzes;
             if (currentEntityId) {
                 quizzes = allData.filter(item => item.type === 'quiz' && item.entity_id === currentEntityId);
+                document.getElementById('quizzesBackBtn').onclick = goBackToEntity;
             } else {
                 quizzes = allData.filter(item => item.type === 'quiz' && item.visibility === 'public');
+                 document.getElementById('quizzesBackBtn').onclick = goToHome;
             }
             
             if (quizzes.length === 0) {
