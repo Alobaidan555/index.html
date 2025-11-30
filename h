@@ -1,0 +1,4583 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>موقع المسابقات التفاعلي</title>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+  
+  <script>
+      // 🟢 قيم FirebaseConfig الحقيقية
+      const firebaseConfig = {
+          apiKey: "AIzaSyBJbUi4uSOwaBev2HpbTH0DOtaeqSGiUxg",
+          authDomain: "project-2o25.firebaseapp.com",
+          projectId: "project-2o25",
+          storageBucket: "project-2o25.firebasestorage.app",
+          messagingSenderId: "995772420566",
+          appId: "1:995772420566:web:44b5b6059f1f86ab499477"
+      };
+
+      // تهيئة Firebase باستخدام Version 8
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      
+      // تعريف ثابت للمجموعة الرئيسية لتخزين السجلات
+      const COLLECTION_NAME = 'competition_data'; 
+  </script>
+  
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        .container {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 30px 20px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p { font-size: 1.2em; opacity: 0.9; }
+        
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        
+        .entity-selector { margin-bottom: 30px; }
+        .entity-selector label { display: block; font-size: 1.1em; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .entity-selector select { width: 100%; padding: 15px; font-size: 1em; border: 2px solid #e0e0e0; border-radius: 10px; background: white; cursor: pointer; transition: all 0.3s; }
+        .entity-selector select:focus { outline: none; border-color: #667eea; }
+        
+        .quick-access {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .access-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .access-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .access-card h3 { margin: 0 0 10px 0; font-size: 1.5em; }
+        .access-card p { margin: 0; opacity: 0.9; }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .btn-secondary { background: #6c757d; }
+        .btn-danger { background: #dc3545; }
+        .btn-success { background: #28a745; }
+        
+        .section-title { font-size: 2em; color: #333; margin: 0 0 20px 0; text-align: center; }
+        
+        .login-form { max-width: 400px; margin: 0 auto; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: bold; color: #333; margin-bottom: 8px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; font-size: 1em; border: 2px solid #e0e0e0; border-radius: 8px; transition: all 0.3s; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        
+        .entity-sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .section-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .section-card:hover { transform: scale(1.05); }
+        .section-card h3 { font-size: 1.8em; margin: 0; }
+        
+        .quiz-list { display: grid; gap: 15px; }
+        
+        .quiz-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-right: 5px solid #667eea;
+        }
+        .quiz-item h4 { margin: 0 0 10px 0; color: #333; }
+        
+        .quiz-item-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .leaderboard-table th { background: #667eea; color: white; padding: 15px; text-align: right; }
+        .leaderboard-table td { padding: 15px; border-bottom: 1px solid #e0e0e0; }
+        .leaderboard-table tr:nth-child(even) { background: #f8f9fa; }
+        
+        /* عجلة الحظ */
+        .wheel-container-new { position: relative; width: min(400px, 90vw); height: min(400px, 90vw); max-width: 500px; max-height: 500px; }
+        .arrow-new { position: absolute; top: -25px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: clamp(15px, 2vw, 20px) solid transparent; border-right: clamp(15px, 2vw, 20px) solid transparent; border-top: clamp(30px, 4vw, 40px) solid #e57373; z-index: 10; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+        .center-circle-new { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: clamp(40px, 8vw, 60px); height: clamp(40px, 8vw, 60px); background: #ffffff; border-radius: 50%; border: 4px solid #64b5f6; z-index: 5; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+
+        #wheelPage .main-card { display: flex; flex-direction: column; align-items: center; }
+        .wheel-content-wrapper { display: flex; gap: 20px; flex-wrap: wrap; width: 100%; max-width: 900px; justify-content: center; align-items: flex-start; }
+        .wheel-section-new { flex: 1.5; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; min-width: 0; }
+        .sidebar-new { flex: 1; background: rgba(255,255,255,0.95); border-radius: 20px; padding: clamp(15px, 3vw, 25px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; min-width: 250px; height: 450px; }
+        .names-textarea { flex: 1; min-height: 200px; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: clamp(14px, 1.5vw, 16px); font-family: 'Arial', sans-serif; resize: none; transition: border-color 0.3s; line-height: 1.8; }
+        .controls-new { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; width: 100%; max-width: 400px; }
+        .spin-button-new { background: #66bb6a; color: white; border: none; padding: clamp(12px, 2vw, 18px) clamp(30px, 5vw, 50px); font-size: clamp(16px, 2.5vw, 24px); font-weight: bold; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(102,187,106,0.4); transition: all 0.3s; width: 100%; }
+        .spin-button-new:hover:not(:disabled) { background: #57a35b; transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 20px rgba(102,187,106,0.6); }
+        .spin-button-new.spinning { animation: pulse 0.5s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        
+        .winner-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; box-sizing: border-box; }
+        .winner-modal.show { display: flex; }
+        .winner-content { background: white; padding: clamp(30px, 5vw, 50px); border-radius: 30px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.4); animation: bounce-in 0.5s; max-width: 90%; }
+        @keyframes bounce-in { 0% { transform: scale(0); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .winner-name-new { font-size: clamp(28px, 6vw, 48px); color: #66bb6a; font-weight: bold; margin: 0 0 30px 0; animation: glow 1.5s infinite; word-break: break-word; }
+        @keyframes glow { 0%, 100% { text-shadow: 0 0 10px rgba(102,187,106,0.5); } 50% { text-shadow: 0 0 20px rgba(102,187,106,0.8); } }
+        .close-button { background: #64b5f6; color: white; border: none; padding: clamp(12px, 2vw, 15px) clamp(30px, 5vw, 40px); border-radius: 25px; font-size: clamp(14px, 2vw, 18px); cursor: pointer; transition: background 0.3s; }
+        .delete-button-new { background: #e57373; color: white; border: none; padding: clamp(12px, 2vw, 15px) clamp(30px, 5vw, 40px); border-radius: 25px; font-size: clamp(14px, 2vw, 18px); cursor: pointer; transition: background 0.3s; }
+        @media (max-width: 900px) { .wheel-content-wrapper { flex-direction: column; align-items: center; } .sidebar-new { order: 2; width: 100%; max-width: 400px; height: auto; } .wheel-section-new { order: 1; } .controls-new { width: 100%; max-width: 300px; } }
+
+        .member-list { margin-top: 20px; }
+        .member-item { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #28a745; color: white; padding: 15px 30px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 1000; display: none; }
+        .toast.error { background: #dc3545; }
+        .toast.show { display: block; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { transform: translateX(-50%) translateY(-100%); } to { transform: translateX(-50%) translateY(0); } }
+        
+        .back-btn { background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; }
+        .back-btn:hover { background: #5a6268; }
+        
+        .hidden { display: none; }
+        .question-item { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .answer-option { display: block; padding: 10px; margin: 5px 0; background: white; border: 2px solid #e0e0e0; border-radius: 5px; cursor: pointer; }
+        .answer-option:hover { border-color: #667eea; }
+        .answer-option input { margin-left: 10px; }
+        
+        .question-form { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px solid #e0e0e0; }
+        .question-form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .remove-question-btn { background: #dc3545; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; }
+        .copy-question-btn { background: #17a2b8; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; margin-left: 10px; }
+        .answer-input-group { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .answer-input-group input[type="text"] { flex: 1; }
+        .remove-answer-btn { background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
+        .add-answer-btn { background: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .question-type-selector { margin-bottom: 15px; }
+        
+        .entity-card { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 15px; border: 2px solid #e0e0e0; }
+        .entity-card h4 { margin: 0 0 10px 0; color: #333; }
+        .entity-card-actions { margin-top: 15px; display: flex; gap: 10px; }
+        .entity-card-actions button { flex: 1; }
+        
+        .stats-summary { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px; }
+        .stats-summary h5 { margin: 0 0 10px 0; color: #667eea; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 0.9em; }
+
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes confetti { 0% { transform: translateY(-100%) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        .confetti-piece { position: fixed; width: 10px; height: 10px; animation: confetti 3s linear; pointer-events: none; z-index: 1001; }
+
+        /* ستايل المودال (المنبثق) الجديد لعجلة الحظ في المسابقة */
+        .wheel-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999; 
+            display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .wheel-modal-content {
+            background: white; border-radius: 15px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center;
+        }
+  </style>
+ </head>
+ <body>
+  <div class="toast" id="toast"></div>
+  <div class="container"><div id="homePage">
+    <div class="header">
+     <h1 id="mainTitle">موقع المسابقات التفاعلي</h1>
+     <p id="welcomeMessage">مرحباً بكم في موقع المسابقات</p>
+    </div>
+    <div class="main-card">
+     <div class="entity-selector"><label for="entitySelect">اختر الجهة للدخول:</label> <select id="entitySelect"> <option value="">-- اختر جهة --</option> </select>
+     </div><button class="btn" id="enterEntityBtn" disabled> <span id="enterButtonText">دخول</span> </button>
+     <div style="text-align: center; margin: 20px 0;">
+      <div style="border-top: 2px solid #e0e0e0; margin: 20px 0;"></div>
+      <p style="color: #666;">أو</p>
+     </div>
+     <div class="quick-access" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+      <div class="access-card" onclick="showPublicQuizzes()">
+       <h3>🎯</h3>
+       <h3>المسابقات العامة</h3>
+       <p>الدخول المباشر للمسابقات</p>
+      </div>
+      <div class="access-card" onclick="showWheelOfFortune()">
+       <h3>🎡</h3>
+       <h3>عجلة الحظ</h3>
+       <p>جرب حظك الآن</p>
+      </div>
+     </div>
+     <div style="margin-top: 30px;"><button class="btn" id="superAdminBtn" onclick="showPage('superAdminLoginPage')"> <span id="adminButtonText">الإدارة العامة</span> </button>
+</div>
+     </div>
+    </div>
+   </div><div id="superAdminLoginPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goToHome()">← العودة</button>
+     <h2 class="section-title">تسجيل دخول الإدارة العامة</h2>
+     <form class="login-form" id="superAdminLoginForm" onsubmit="loginSuperAdmin(event)">
+      <div class="form-group"><label>اسم المستخدم:</label> <input type="text" id="superAdminUsername" required>
+      </div>
+      <div class="form-group"><label>كلمة المرور:</label> <input type="password" id="superAdminPassword" required>
+      </div><button type="submit" class="btn">دخول</button>
+     </form>
+    </div>
+   </div><div id="superAdminPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goToHome()">← العودة</button>
+     <h2 class="section-title">لوحة الإدارة العامة</h2>
+     <div class="form-group"><label>إضافة جهة جديدة:</label> <input type="text" id="newEntityName" placeholder="اسم الجهة">
+     </div>
+     <div class="form-group"><label>اسم مستخدم المدير:</label> <input type="text" id="newEntityAdminUsername" placeholder="اسم المستخدم">
+     </div>
+     <div class="form-group"><label>كلمة مرور المدير:</label> <input type="password" id="newEntityAdminPassword" placeholder="كلمة المرور">
+     </div><button class="btn btn-success" onclick="addNewEntity()">إضافة الجهة</button>
+     <div style="margin-top: 40px;">
+      <h3>إدارة النسخ الاحتياطي:</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;"><button class="btn btn-success" onclick="exportBackup()">📥 تصدير نسخة احتياطية</button> <button class="btn" onclick="document.getElementById('importFileInput').click()">📤 استيراد نسخة احتياطية</button>
+      </div><input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importBackup(event)">
+     </div>
+     <div style="margin-top: 40px;">
+      <h3>الجهات المسجلة:</h3>
+      <div id="entitiesList"></div>
+     </div>
+    </div>
+   </div><div id="entityPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goToHome()">← العودة</button>
+     <h2 class="section-title" id="entityPageTitle"></h2>
+     <div id="entityPageEnrollmentCard">
+        </div>
+     <div class="entity-sections">
+      <div class="section-card" onclick="showQuizzesSection()">
+       <h3>🎯</h3>
+       <h3>الاختبارات والمسابقات</h3>
+      </div>
+      <div class="section-card" onclick="showEntityAdminLogin()">
+       <h3>⚙️</h3>
+       <h3>الإدارة</h3>
+      </div>
+     </div>
+    </div>
+   </div>
+   <div id="studentEnrollmentFormPage" class="hidden">
+        <div class="main-card">
+            <button class="back-btn" id="enrollBackBtn" onclick="showEntityPage()">← العودة</button>
+            <h2 class="section-title">تسجيل طالب جديد</h2>
+            <form class="login-form" id="studentEnrollmentForm" onsubmit="submitStudentEnrollment(event)">
+                <div class="form-group">
+                    <label>الاسم الكامل:</label>
+                    <input type="text" id="enroll_name" required>
+                </div>
+                <div class="form-group">
+                    <label>هاتف الطالب:</label>
+                    <input type="text" id="enroll_student_phone">
+                </div>
+                <div class="form-group">
+                    <label>هاتف ولي الأمر:</label>
+                    <input type="text" id="enroll_parent_phone">
+                </div>
+                <button type="submit" class="btn">إرسال طلب التسجيل</button>
+            </form>
+            <div id="enrollmentStatusMessage" style="text-align: center; margin-top: 20px; color: #667eea; font-weight: bold;"></div>
+        </div>
+    </div>
+    <div id="enrollmentSettingsPage" class="hidden">
+        <div class="main-card">
+            <button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+            <h2 class="section-title">إعدادات تسجيل الطلاب الذاتي</h2>
+            <p style="color: #666; margin-bottom: 20px;">قم بتفعيل التسجيل وتحديد الحقول الإجبارية.</p>
+
+            <div class="form-group" style="background: #e9ecef; padding: 15px; border-radius: 8px;">
+                <label style="font-weight: bold; margin-bottom: 10px;">حالة التسجيل:</label>
+                <select id="enrollmentStatus" style="width: 100%;">
+                    <option value="disabled">غير مفعل</option>
+                    <option value="enabled">مفعل - يحتاج اعتماد</option>
+                    <option value="auto">مفعل - تسجيل فوري (لا يحتاج اعتماد)</option>
+                </select>
+                <p style="font-size: 0.8em; margin-top: 5px; color: #6c757d;">(التسجيل الفوري يتطلب تحديد فصل افتراضي أدناه)</p>
+            </div>
+
+            <h4 style="margin-top: 30px; margin-bottom: 15px;">تحديد الحقول الإجبارية:</h4>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <label style="flex: 1;">اسم الطالب:</label>
+                <input type="checkbox" id="req_name" checked disabled style="width: auto;">
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <label style="flex: 1;">هاتف الطالب:</label>
+                <input type="checkbox" id="req_student_phone" style="width: auto;">
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; align-items: center;">
+                <label style="flex: 1;">هاتف ولي الأمر:</label>
+                <input type="checkbox" id="req_parent_phone" style="width: auto;">
+            </div>
+
+            <div id="defaultClassSettings" class="form-group" style="margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+                <label>الفصل الافتراضي للتسجيل الفوري (Auto-Enroll):</label>
+                <select id="defaultClassSelect">
+                    </select>
+            </div>
+            
+            <button class="btn btn-success" onclick="saveEnrollmentSettings()" style="margin-top: 30px;">حفظ الإعدادات</button>
+        </div>
+    </div>
+   <div id="entityAdminLoginPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntity()">← العودة</button>
+     <h2 class="section-title">تسجيل دخول الإدارة</h2>
+     <form class="login-form" id="entityAdminLoginForm" onsubmit="loginEntityAdmin(event)">
+      <div class="form-group"><label>اسم المستخدم:</label> <input type="text" id="entityAdminUsername" required>
+      </div>
+      <div class="form-group"><label>كلمة المرور:</label> <input type="password" id="entityAdminPassword" required>
+      </div><button type="submit" class="btn">دخول</button>
+     </form>
+    </div>
+   </div><div id="entityAdminPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntity()">← العودة</button>
+     <h2 class="section-title">لوحة إدارة الجهة</h2>
+     <p style="text-align: center; color: #666; margin-bottom: 20px;">مسجل الدخول: <strong id="loggedInUserName"></strong> (<span id="userRole"></span>)</p>
+     <div class="entity-sections">
+      </div>
+    </div>
+   </div><div id="membersManagementPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+     <h2 class="section-title">إدارة الأعضاء</h2>
+     <div class="form-group"><label>اسم المستخدم للعضو الجديد:</label> <input type="text" id="newMemberUsername" placeholder="اسم المستخدم">
+     </div>
+     <div class="form-group"><label>كلمة المرور:</label> <input type="password" id="newMemberPassword" placeholder="كلمة المرور">
+     </div><button class="btn btn-success" onclick="addMember()">إضافة عضو</button>
+     <div class="member-list" id="membersList"></div>
+    </div>
+   </div><div id="addQuizPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+     <h2 class="section-title">إضافة مسابقة / اختبار</h2>
+     <div class="form-group"><label>عنوان المسابقة:</label> <input type="text" id="quizTitle" placeholder="عنوان المسابقة">
+     </div>
+     <div class="form-group"><label>النوع:</label> <select id="quizType"> <option value="quiz">اختبار</option> <option value="competition">مسابقة</option> </select>
+     </div>
+     <div class="form-group"><label>الرؤية:</label> <select id="quizVisibility"> <option value="public">عام</option> <option value="private">خاص</option> </select>
+     </div>
+     
+     <div class="form-group">
+        <label>توقيت السؤال (بالثواني) - اتركه 0 لتعطيل العداد:</label>
+        <input type="number" id="quizTimer" placeholder="مثال: 30" value="0">
+     </div>
+     <div class="form-group" style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+        <input type="checkbox" id="enableCertificate" style="width:auto;">
+        <label for="enableCertificate" style="margin:0;">تمكين منح شهادة عند النجاح (لنسبة 50% فأكثر)</label>
+     </div>
+     
+     <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+      <h3 style="margin-top: 0;">الأسئلة:</h3>
+        <div style="margin-bottom: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+            <h4>📚 بنك الأسئلة السريع</h4>
+            <p style="font-size:0.9em;">أضف أسئلة عشوائية من مسابقاتك السابقة</p>
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="importCount" placeholder="عدد الأسئلة" style="width:100px; padding:5px;">
+                <button class="btn" style="width:auto; background:#1976d2;" onclick="importRandomQuestions()">📥 استيراد عشوائي</button>
+            </div>
+        </div>
+      <div id="questionsContainer"></div><button class="btn btn-success" id="addQuestionBtn" onclick="addQuestionForm()">➕ إضافة سؤال</button>
+     </div><button class="btn btn-success" id="saveQuizBtn" onclick="saveQuiz()">حفظ المسابقة</button>
+    </div>
+   </div><div id="myQuizzesPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+     <h2 class="section-title">المسابقات والاختبارات</h2>
+     <div id="adminQuizzesList"></div>
+    </div>
+   </div><div id="quizzesPage" class="hidden">
+    <div class="main-card"><button class="back-btn" id="quizzesBackBtn" onclick="goBackToEntity()">← العودة</button>
+     <h2 class="section-title">الاختبارات والمسابقات</h2>
+     <div class="quiz-list" id="quizzesList"></div>
+    </div>
+   </div><div id="takeQuizPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToQuizzes()">← العودة</button>
+     <h2 class="section-title" id="quizTitle"></h2>
+     <div class="form-group"><label>اسمك:</label> <input type="text" id="participantName" placeholder="أدخل اسمك"> <button class="btn btn-success" id="startQuizBtn" style="margin-top: 15px;" onclick="startQuizQuestions()">ابدأ الاختبار</button>
+     </div>
+     <div id="quizQuestionsContainer"></div>
+    </div>
+   </div><div id="leaderboardPage" class="hidden">
+    <div class="main-card"><button class="back-btn" id="leaderboardBackBtn" onclick="goBackToQuizzes()">← العودة</button>
+     <h2 class="section-title">لوحة الصدارة</h2>
+     <h3 id="leaderboardSubtitle" style="text-align:center; color:#667eea; margin-bottom:20px;"></h3>
+     <table class="leaderboard-table" id="leaderboardTable">
+      <thead>
+       <tr>
+        <th>الترتيب</th>
+        <th>الاسم</th>
+        <th>المسابقة</th>
+        <th>النتيجة</th>
+        <th>الوقت (ثانية)</th>
+       </tr>
+      </thead>
+      <tbody id="leaderboardBody"></tbody>
+     </table>
+    </div>
+   </div>
+   
+   <div id="wheelPage" class="hidden">
+    <div class="main-card" style="min-height: 80vh;">
+      <button class="back-btn" onclick="goToHome()">← العودة</button>
+      <h2 class="section-title">عجلة الحظ</h2>
+      
+      <div class="wheel-content-wrapper">
+        <section class="wheel-section-new">
+          <div class="wheel-container-new">
+            <div class="arrow-new" id="wheelArrow" style="border-top-color: #e57373;"></div>
+            <canvas id="wheelCanvas" width="400" height="400" style="border-radius: 50%; border: 8px solid #ffffff; box-shadow: 0 0 30px rgba(0,0,0,0.3); width: 100%; height: 100%;"></canvas>
+            <div class="center-circle-new"></div>
+          </div>
+          <div class="controls-new">
+            <button class="spin-button-new" id="spinButton" style="background-color: #66bb6a;">
+              أدر العجلة
+            </button>
+          </div>
+        </section>
+        <aside class="sidebar-new">
+          <h2 class="sidebar-title">أدخل الأسماء</h2>
+          <textarea class="names-textarea" id="namesTextarea" placeholder="أدخل أسماء متعددة (كل اسم في سطر)
+مثال:
+محمد
+فاطمة
+علي
+نور"></textarea>
+        </aside>
+      </div>
+      
+    </div>
+   </div>
+   
+   <div id="contestWheelModal" class="wheel-modal-overlay hidden" onclick="if(event.target.id === 'contestWheelModal') hideContestWheelModal()">
+        <div class="wheel-modal-content" onclick="event.stopPropagation()">
+            <h2 class="section-title">🎡 اختيار المتسابق عشوائياً</h2>
+            
+            <div id="contestWheelControls" style="width: 100%; max-width: 400px; margin-bottom: 20px;">
+                <textarea class="names-textarea" id="contestNamesTextarea" placeholder="أدخل أسماء المتسابقين (كل اسم في سطر)
+مثال:
+محمد
+فاطمة
+علي
+نور" style="min-height: 100px; margin-bottom: 10px;"></textarea>
+                <button class="btn btn-secondary" style="width: 100%;" onclick="updateContestWheelNames()">تحديث العجلة</button>
+            </div>
+            
+            <div class="wheel-container-new" style="width: 300px; height: 300px;">
+                <div class="arrow-new" style="border-top-color: #f5576c;"></div>
+                <canvas id="contestWheelCanvas" width="300" height="300" style="border-radius: 50%; border: 6px solid #f0f0f0;"></canvas>
+                <div class="center-circle-new" style="width: 35px; height: 35px;"></div>
+            </div>
+            <div class="controls-new" style="max-width: 300px;">
+                <button class="spin-button-new" id="contestSpinButton" style="background-color: #f5576c; font-size: 1.2em;">
+                    أدر العجلة
+                </button>
+                <button class="btn btn-secondary" onclick="hideContestWheelModal()" style="width: 100%; margin-top: 10px;">إغلاق</button>
+            </div>
+            <h3 id="contestWinnerDisplay" style="margin-top: 20px; font-size: 1.5em; color: #667eea;"></h3>
+        </div>
+   </div>
+
+   <div id="participantsDetailsPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToMyQuizzes()">← العودة</button>
+     <h2 class="section-title" id="participantsQuizTitle"></h2>
+     <div id="participantsDetailsList"></div>
+    </div>
+   </div>
+   
+   <div id="celebration-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+      <div id="celebration-content" style="background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; animation: popIn 0.5s ease-out;">
+        <div id="celebration-emoji" style="font-size: 80px; margin-bottom: 20px;">🎉</div>
+        <div id="celebration-message" style="font-size: 24px; font-weight: bold; margin-bottom: 20px;"></div>
+        <button id="celebration-close" style="background: #667eea; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">متابعة</button>
+      </div>
+    </div>
+    
+    <div class="winner-modal" id="winnerModal">
+   <div class="winner-content">
+    <div class="winner-emoji">🎉</div>
+    <h2 class="winner-title" id="winnerMessage">الفائز هو</h2>
+    <div class="winner-name-new" id="winnerName"></div>
+    <div class="modal-buttons"><button class="close-button" id="closeModal">رائع!</button> <button class="delete-button-new" id="deleteWinner">حذف الفائز</button></div>
+   </div>
+  </div>
+
+    <div id="certificateManagementPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+     <h2 class="section-title">إعدادات الشهادات</h2>
+     <div class="form-group">
+        <label>اختر المسابقة:</label>
+        <select id="certQuizSelect" onchange="loadQuizCertSettings()"></select>
+     </div>
+     <div id="certSettingsArea" class="hidden">
+         <div class="form-group">
+            <label>عنوان الشهادة:</label>
+            <input type="text" id="certTitleInput" placeholder="مثال: شهادة شكر وتقدير">
+         </div>
+         <div class="form-group">
+            <label>نص الشهادة (يظهر قبل اسم الطالب):</label>
+            <input type="text" id="certBodyInput" placeholder="مثال: تشهد إدارة الموقع بأن">
+         </div>
+         <div class="form-group">
+            <label>صورة خلفية الشهادة (اختياري - يفضل صورة عرضية):</label>
+            <input type="file" id="certBgInput" accept="image/*" onchange="previewCertImage()">
+            <p style="font-size: 0.8em; color: #666;">ملاحظة: الصور الكبيرة قد تؤثر على سرعة الحفظ.</p>
+            <div id="certImagePreview" style="margin-top: 10px; max-width: 200px; border: 1px solid #ccc;"></div>
+         </div>
+         <button class="btn btn-success" onclick="saveCertSettings()">حفظ إعدادات الشهادة</button>
+     </div>
+    </div>
+   </div>
+
+   <div id="classesManagementPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+     <h2 class="section-title">إدارة الفصول الدراسية</h2>
+     <button class="btn btn-warning" onclick="showPendingEnrollments()" style="margin-bottom: 20px;">
+        🔔 طلبات التسجيل المعلقة (<span id="pendingCount">0</span>)
+    </button>
+     <div class="form-group" style="display: flex; gap: 10px;">
+        <input type="text" id="newClassName" placeholder="اسم الفصل الجديد" style="flex: 1;">
+        <button class="btn btn-success" style="width: auto;" onclick="createNewClass()">+ إضافة فصل</button>
+     </div>
+     <div id="classesList" class="quiz-list"></div>
+    </div>
+   </div>
+
+   <div id="pendingEnrollmentsPage" class="hidden">
+        <div class="main-card">
+            <button class="back-btn" onclick="showClassesManagement()">← العودة للفصول</button>
+            <h2 class="section-title">طلبات التسجيل المعلقة</h2>
+            <div id="pendingEnrollmentList">
+                </div>
+        </div>
+    </div>
+
+   <div id="classDetailsPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="showClassesManagement()">← العودة للفصول</button>
+     <h2 class="section-title" id="currentClassName"></h2>
+     <p id="classTeacherName" style="text-align: center; color: #666; margin-bottom: 20px;"></p>
+     
+     <div class="form-group" style="background: #f0f0f0; padding: 15px; border-radius: 10px;">
+        <label>إضافة طالب جديد:</label>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="newStudentName" placeholder="اسم الطالب" style="flex: 1;">
+            <input type="text" id="newStudentPhone" placeholder="هاتف الطالب" style="flex: 1;">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="newParentPhone" placeholder="هاتف ولي الأمر" style="flex: 1;">
+            <button class="btn btn-success" style="width: auto;" onclick="addStudentToClass()">إضافة</button>
+        </div>
+     </div>
+
+     <h3>قائمة الطلاب:</h3>
+     <div id="studentsList" class="member-list"></div>
+    </div>
+   </div>
+
+   <div id="teacherClassViewPage" class="hidden">
+    <div class="main-card"><button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+     <h2 class="section-title" id="teacherClassName"></h2>
+     <div class="entity-sections" style="grid-template-columns: 1fr;">
+        <div class="section-card" onclick="openAttendanceHistory()">
+            <h3>📋</h3>
+            <h3>سجل الالتزام (الحضور)</h3>
+        </div>
+        <div id="teacherClassViewDetails">
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">عدد الطلاب: <span id="teacherStudentCount">0</span></p>
+            <h3 style="margin-bottom: 15px;">تسجيل حضور اليوم:</h3>
+            <div id="teacherStudentsList" class="member-list"></div>
+        </div>
+     </div>
+    </div>
+   </div>
+   
+   <div id="attendanceHistoryPage" class="hidden">
+        <div class="main-card"><button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
+            <h2 class="section-title">سجل الالتزام (الحضور)</h2>
+            <h3 id="historyClassName" style="text-align:center; color:#667eea; margin-bottom:20px;"></h3>
+            
+            <div id="attendanceSummary" class="stats-summary" style="margin-bottom: 30px;"></div>
+            
+            <h3 style="margin-bottom: 15px;">السجلات التفصيلية:</h3>
+            <div id="attendanceRecordsList" class="member-list"></div>
+        </div>
+   </div>
+   
+  </div>
+  <script>
+    // ----------------------------------------------------------------------------------
+    // 🆕 الدوال الحقيقية للربط بـ FIREBASE FIRESTORE
+    // ----------------------------------------------------------------------------------
+    window.dataSdk = {
+        // 1. القراءة: جلب جميع البيانات من المجموعة
+        async get() {
+            try {
+                const snapshot = await db.collection(COLLECTION_NAME).get();
+                const data = snapshot.docs.map(doc => ({
+                    ...doc.data(),
+                    __backendId: doc.id, // استخدام معرف المستند كـ __backendId
+                    id: doc.data().id || doc.id // استخدام الحقل 'id' أو معرف المستند
+                }));
+                return { isOk: true, data: data };
+            } catch (error) {
+                console.error("Firebase GET failed:", error);
+                return { isOk: false, error: error };
+            }
+        },
+        
+        // 2. الإنشاء: إضافة سجل جديد (مثلاً جهة أو نتيجة)
+        async create(data) {
+            try {
+                // حذف معرفات الـ Mock قبل الإرسال
+                const dataToSave = { ...data };
+                delete dataToSave.__backendId; 
+                
+                const docRef = await db.collection(COLLECTION_NAME).add(dataToSave);
+                
+                // تحديث السجل بمعرف المستند الحقيقي (Firestore ID)
+                await docRef.update({ id: docRef.id });
+
+                return { isOk: true, result: { __backendId: docRef.id } };
+            } catch (error) {
+                console.error("Firebase CREATE failed:", error);
+                return { isOk: false, error: error };
+            }
+        },
+
+        // 3. التحديث: تحديث سجل موجود
+        async update(data) {
+            if (!data.__backendId) return { isOk: false, error: "Missing __backendId" };
+            try {
+                const docId = data.__backendId;
+                // حذف معرفات الـ Mock قبل الإرسال
+                const dataToUpdate = { ...data };
+                delete dataToUpdate.__backendId;
+                
+                await db.collection(COLLECTION_NAME).doc(docId).update(dataToUpdate);
+                return { isOk: true };
+            } catch (error) {
+                console.error("Firebase UPDATE failed:", error);
+                return { isOk: false, error: error };
+            }
+        },
+        
+        // 4. الحذف: حذف سجل
+        async delete(data) {
+            if (!data.__backendId) return { isOk: false, error: "Missing __backendId" };
+            try {
+                await db.collection(COLLECTION_NAME).doc(data.__backendId).delete();
+                return { isOk: true };
+            } catch (error) {
+                console.error("Firebase DELETE failed:", error);
+                return { isOk: false, error: error };
+            }
+        },
+        
+        // 5. التهيئة (تستخدم لربط dataHandler بالتغييرات وتوفير Realtime): 
+        async init(dataHandler) {
+            try {
+                // هذا يسمح لـ Firebase بتحديث dataHandler عند وجود تغييرات (Realtime)
+                db.collection(COLLECTION_NAME).onSnapshot(snapshot => {
+                    const data = snapshot.docs.map(doc => ({
+                        ...doc.data(),
+                        __backendId: doc.id,
+                        id: doc.data().id || doc.id
+                    }));
+                    dataHandler.onDataChanged(data);
+                });
+                return { isOk: true };
+            } catch (error) {
+                console.error("Firebase INIT failed:", error);
+                return { isOk: false, error: error };
+            }
+        }
+    };
+    // ----------------------------------------------------------------------------------
+    // نهاية الدوال الحقيقية
+    // ----------------------------------------------------------------------------------
+        const MASTER_USERNAME = 'admin';
+        const MASTER_PASSWORD = 'master123';
+        
+        let allData = [];
+        let currentEntityId = null;
+        let currentUserId = null;
+        let currentUserRole = null;
+        let currentQuizId = null;
+        let quizStartTime = null;
+        let isSuperAdmin = false;
+        
+        // 🆕 متغير لحفظ عداد التوقيت
+        let quizTimerInterval; 
+        
+        const defaultConfig = {
+            main_title: 'موقع المسابقات التفاعلي',
+            welcome_message: 'مرحباً بكم في موقع المسابقات',
+            enter_button: 'دخول',
+            admin_button: 'الإدارة العامة',
+            primary_color: '#667eea',
+            secondary_color: '#764ba2',
+            text_color: '#333333',
+            success_color: '#28a745',
+            danger_color: '#dc3545',
+            font_family: 'Segoe UI',
+            font_size: 16
+        };
+
+        const dataHandler = {
+            async onDataChanged(data) {
+                allData = data;
+               
+                updateEntitySelect();
+                if (document.getElementById('entitiesList')) renderEntitiesList();
+                if (document.getElementById('adminQuizzesList')) renderAdminQuizzes();
+                if (document.getElementById('quizzesList')) renderQuizzesList();
+                if (document.getElementById('leaderboardBody')) renderLeaderboard();
+                if (document.getElementById('membersList')) renderMembersList();
+                if (document.getElementById('classesList')) renderClassesList(); // تحديث قائمة الفصول
+                if (document.getElementById('studentsList')) renderStudentsList(); // تحديث قائمة الطلاب
+                if (document.getElementById('teacherStudentsList')) showTeacherClass(currentClassId); // تحديث عرض المعلم
+                if (document.getElementById('attendanceRecordsList') && document.getElementById('historyClassName').dataset.classId) {
+                    renderAttendanceHistory(document.getElementById('historyClassName').dataset.classId);
+                }
+                
+                // 🆕 تحديث واجهات التسجيل المعلقة والبطاقة العامة
+                if (currentEntityId) {
+                    updateEnrollmentCardVisibility(); 
+                    updatePendingCount(); 
+                }
+            }
+        };
+
+        async function onConfigChange(config) {
+            document.getElementById('mainTitle').textContent = config.main_title || defaultConfig.main_title;
+            document.getElementById('welcomeMessage').textContent = config.welcome_message || defaultConfig.welcome_message;
+            document.getElementById('enterButtonText').textContent = config.enter_button || defaultConfig.enter_button;
+            document.getElementById('adminButtonText').textContent = config.admin_button || defaultConfig.admin_button;
+            
+            const customFont = config.font_family || defaultConfig.font_family;
+            const baseSize = config.font_size || defaultConfig.font_size;
+            document.body.style.fontFamily = `${customFont}, sans-serif`;
+            document.body.style.fontSize = `${baseSize}px`;
+        }
+        
+        const STATE_KEY = 'last_page_id'; // مفتاح الحفظ في localStorage
+        const ENTITY_KEY = 'current_entity_id'; // مفتاح حفظ معرف الجهة
+
+        async function initApp() {
+            const dataInitResult = await window.dataSdk.init(dataHandler);
+            if (!dataInitResult.isOk) {
+                showToast('فشل تهيئة قاعدة البيانات. يرجى التحقق من اتصال Firebase.', true);
+            }
+            
+            document.getElementById('entitySelect').addEventListener('change', function() {
+                document.getElementById('enterEntityBtn').disabled = !this.value;
+            });
+
+            document.getElementById('enterEntityBtn').addEventListener('click', function() {
+                const entityId = document.getElementById('entitySelect').value;
+                if (entityId) {
+                    currentEntityId = entityId;
+                    showEntityPage();
+                }
+            });
+
+            document.getElementById('superAdminBtn').addEventListener('click', function() {
+                showPage('superAdminLoginPage');
+            });
+
+            const lastPageId = localStorage.getItem(STATE_KEY);
+            const savedEntityId = localStorage.getItem(ENTITY_KEY);
+            
+            if (lastPageId && lastPageId !== 'homePage') {
+                if (lastPageId === 'superAdminPage') {
+                    showToast('تمت إعادة توجيهك إلى صفحة الدخول، يجب تسجيل الدخول مرة أخرى.', true);
+                    showPage('superAdminLoginPage');
+                    
+                } else if (savedEntityId) {
+                    currentEntityId = savedEntityId;
+                    
+                    if (lastPageId.includes('Admin') || lastPageId.includes('Management') || lastPageId.includes('myQuizzes')) {
+                        showEntityPage();
+                        showToast('تم استعادة الجهة. يرجى تسجيل الدخول كمدير أو عضو مرة أخرى.', false);
+                    } else {
+                        showPage(lastPageId);
+                        showToast('تم استعادة آخر صفحة كنت عليها.', false);
+                    }
+                } else {
+                    showPage('homePage');
+                }
+            } else {
+                showPage('homePage');
+            }
+            
+            initWheel(); 
+            initContestWheel(); // تهيئة عجلة المسابقة
+        }
+
+        function updateEntitySelect() {
+            const select = document.getElementById('entitySelect');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- اختر جهة --</option>';
+            
+            const entities = allData.filter(item => item.type === 'entity');
+            entities.forEach(entity => {
+                const option = document.createElement('option');
+                option.value = entity.id;
+                option.textContent = entity.entity_name;
+                select.appendChild(option);
+            });
+            
+            if (currentValue) {
+                select.value = currentValue;
+            }
+        }
+
+        function showPage(pageId) {
+            const pages = ['homePage', 'superAdminLoginPage', 'superAdminPage', 'entityPage', 
+                          'entityAdminLoginPage', 'entityAdminPage', 'quizzesPage', 
+                          'takeQuizPage', 'leaderboardPage', 'wheelPage', 'membersManagementPage',
+                          'addQuizPage', 'myQuizzesPage', 'participantsDetailsPage', 
+                          'certificateManagementPage', 'classesManagementPage', 'classDetailsPage', 'teacherClassViewPage',
+                          'attendanceHistoryPage', 'enrollmentSettingsPage', 'studentEnrollmentFormPage', 'pendingEnrollmentsPage'];
+            
+            pages.forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(pageId).classList.remove('hidden');
+            
+            const excludedPages = ['homePage', 'superAdminLoginPage', 'entityAdminLoginPage', 'takeQuizPage', 'studentEnrollmentFormPage'];
+            if (!excludedPages.includes(pageId)) {
+                localStorage.setItem(STATE_KEY, pageId);
+                if (currentEntityId) {
+                    localStorage.setItem(ENTITY_KEY, currentEntityId);
+                }
+            } else if (pageId === 'homePage') {
+                localStorage.removeItem(STATE_KEY);
+                localStorage.removeItem(ENTITY_KEY);
+            }
+        }
+
+        function goToHome() {
+            currentEntityId = null; currentUserId = null; currentUserRole = null; isSuperAdmin = false;
+            showPage('homePage');
+        }
+
+        function showEntityPage() {
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            if (entity) {
+                document.getElementById('entityPageTitle').textContent = entity.entity_name;
+                updateEnrollmentCardVisibility(); 
+                showPage('entityPage');
+            }
+        }
+
+        function goBackToEntity() { currentUserId = null; currentUserRole = null; showEntityPage(); }
+        function goBackToEntityAdmin() { 
+            // تحديث واجهة لوحة التحكم قبل العودة
+            if (currentUserRole) updateAdminDashboardUI(currentUserRole);
+            updatePendingCount(); // 🆕 تحديث عدد الطلبات المعلقة عند العودة
+            showPage('entityAdminPage'); 
+        }
+        function showMembersManagement() { renderMembersList(); showPage('membersManagementPage'); }
+        
+        function showAddQuizForm() {
+            document.getElementById('questionsContainer').innerHTML = '';
+            document.getElementById('quizTitle').value = '';
+            document.getElementById('quizTimer').value = '0';
+            document.getElementById('enableCertificate').checked = false;
+            const saveBtn = document.getElementById('saveQuizBtn');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'حفظ المسابقة';
+            saveBtn.onclick = saveQuiz; 
+            questionCounter = 0; 
+            showPage('addQuizPage');
+        }
+        
+        function showMyQuizzes() { renderAdminQuizzes(); showPage('myQuizzesPage'); }
+        function goBackToMyQuizzes() { showMyQuizzes(); }
+        
+        function showQuizParticipants(quizBackendId) {
+            const quiz = allData.find(item => item.__backendId === quizBackendId);
+            if (!quiz) return;
+            document.getElementById('participantsQuizTitle').textContent = 'إجابات المشاركين - ' + quiz.quiz_title;
+            const results = allData.filter(item => item.type === 'result' && item.quiz_title === quiz.quiz_title && item.entity_id === currentEntityId);
+            const questions = JSON.parse(quiz.questions);
+            const container = document.getElementById('participantsDetailsList');
+            if (results.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">لا توجد نتائج لعرضها</p>';
+                showPage('participantsDetailsPage');
+                return;
+            }
+            results.sort((a, b) => b.score - a.score || a.time_taken - b.time_taken);
+            container.innerHTML = results.map((result, rank) => {
+                const completedDate = new Date(result.completed_at);
+                return `
+                    <div class="entity-card" style="border-right: 5px solid ${rank === 0 ? '#ffd700' : rank === 1 ? '#c0c0c0' : rank === 2 ? '#cd7f32' : '#667eea'};">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div>
+                                <h4 style="margin: 0;">🏅 المركز ${rank + 1}: ${result.participant_name}</h4>
+                                <p style="margin: 5px 0; color: #666;">النتيجة: ${result.score.toFixed(2)} من ${questions.length} | الوقت: ${result.time_taken} ثانية</p>
+                                <p style="margin: 5px 0; color: #999; font-size: 0.9em;">${completedDate.toLocaleDateString('ar-SA')} - ${completedDate.toLocaleTimeString('ar-SA')}</p>
+                            </div>
+                        </div>
+                        <button class="btn" style="padding: 8px 20px; margin-top: 10px;" onclick="showParticipantAnswers('${result.__backendId}', '${quiz.__backendId}')">📄 عرض ملخص الإجابات</button>
+                    </div>
+                `;
+            }).join('');
+            showPage('participantsDetailsPage');
+        }
+        
+        function showParticipantAnswers(resultBackendId, quizBackendId) {
+            const result = allData.find(item => item.__backendId === resultBackendId);
+            const quiz = allData.find(item => item.__backendId === quizBackendId);
+            if (!result || !quiz) return;
+            
+            const questions = JSON.parse(quiz.questions);
+            const participantAnswers = result.user_answers ? JSON.parse(result.user_answers) : null;
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; overflow-y: auto; padding: 20px;';
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = 'background: white; max-width: 900px; margin: 0 auto; border-radius: 15px; padding: 30px; position: relative;';
+            
+            const completedDate = new Date(result.completed_at);
+            const dateStr = completedDate.toLocaleDateString('ar-SA');
+            const timeStr = completedDate.toLocaleTimeString('ar-SA');
+            
+            modalContent.innerHTML = `
+                <button onclick="this.closest('[style*=fixed]').remove()" style="position: absolute; top: 15px; left: 15px; background: #dc3545; color: white; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 1.2em; cursor: pointer; font-weight: bold;">×</button>
+                
+                <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; margin-bottom: 25px;">
+                    <h2 style="margin: 0 0 10px 0;">ملخص إجابات: ${result.participant_name}</h2>
+                    <p style="margin: 0; font-size: 1.3em; font-weight: bold;">
+                        النتيجة: ${result.score.toFixed(2)} من ${questions.length} (${Math.round((result.score / questions.length) * 100)}%)
+                    </p>
+                    <p style="margin: 5px 0;"><strong>الوقت المستغرق:</strong> ${result.time_taken} ثانية</p>
+                    <p style="margin: 5px 0; font-size: 0.9em; opacity: 0.9;">${dateStr} - ${timeStr}</p>
+                </div>
+                
+                <h3 style="margin-bottom: 20px; color: #333;">الإجابات التفصيلية:</h3>
+                <div style="max-height: 60vh; overflow-y: auto;">
+                    ${participantAnswers ? generateDetailedAnswersSummary(participantAnswers, questions) : generateParticipantAnswersSummary(result, questions)}
+                </div>
+            `;
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+        }
+        
+        function generateParticipantAnswersSummary(result, questions) {
+            let html = '';
+            let currentScore = 0;
+            
+            questions.forEach((q, index) => {
+                let isCorrect = false;
+                let partialScore = 0;
+                let answerText = '<span style="color: #999; font-style: italic;">لا توجد إجابة مسجلة</span>';
+                let correctAnswerText = '';
+                
+                if (q.type === 'multiple') {
+                    correctAnswerText = q.answers[q.correct];
+                    answerText = '<span style="color: #999; font-style: italic;">غير متوفرة</span>';
+                } else if (q.type === 'truefalse') {
+                    correctAnswerText = q.correct ? 'صح' : 'خطأ';
+                    answerText = '<span style="color: #999; font-style: italic;">غير متوفرة</span>';
+                } else if (q.type === 'text') {
+                    correctAnswerText = q.correct;
+                    answerText = '<span style="color: #999; font-style: italic;">غير متوفرة</span>';
+                } else if (q.type === 'checkbox') {
+                    correctAnswerText = q.correct.map(i => q.answers[i]).join(' ، ');
+                    answerText = '<span style="color: #999; font-style: italic;">غير متوفرة</span>';
+                } else if (q.type === 'matching') {
+                    correctAnswerText = q.pairs.map(p => `${p.left} ⟷ ${p.right}`).join(' | ');
+                    answerText = '<span style="color: #999; font-style: italic;">غير متوفرة</span>';
+                } else if (q.type === 'ordering') {
+                    correctAnswerText = q.correctOrder.join(' ← ');
+                    answerText = '<span style="color: #999; font-style: italic;">غير متوفرة</span>';
+                }
+                
+                const expectedScoreForQuestion = (result.score / questions.length);
+                
+                if (expectedScoreForQuestion >= 0.9) {
+                    isCorrect = true;
+                    partialScore = 1;
+                } else if (expectedScoreForQuestion > 0) {
+                    partialScore = expectedScoreForQuestion;
+                }
+                
+                currentScore += partialScore;
+                
+                const bgColor = isCorrect ? '#d4edda' : (partialScore > 0 ? '#fff3cd' : '#f8d7da');
+                const borderColor = isCorrect ? '#28a745' : (partialScore > 0 ? '#ffc107' : '#dc3545');
+                const icon = isCorrect ? '✓' : (partialScore > 0 ? '◐' : '✗');
+                
+                html += `
+                    <div style="padding: 20px; background: ${bgColor}; border-radius: 10px; margin-bottom: 15px; border-right: 5px solid ${borderColor};">
+                        <h4 style="margin: 0 0 10px 0;">${icon} السؤال ${index + 1}: ${q.question}</h4>
+                        <p style="margin: 5px 0;"><strong>إجابة المشارك:</strong> ${answerText}</p>
+                        <p style="margin: 5px 0; color: #155724;"><strong>الإجابة النموذجية:</strong> ${correctAnswerText}</p>
+                        ${partialScore > 0 && partialScore < 1 ? `<p style="margin: 5px 0; color: #856404;"><strong>النقاط:</strong> ${partialScore.toFixed(2)}/1</p>` : ''}
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+        
+        function generateDetailedAnswersSummary(participantAnswers, questions) {
+            let html = '';
+            
+            participantAnswers.forEach((answer, index) => {
+                const q = questions[index];
+                let isCorrect = answer.isCorrect || false;
+                let partialScore = answer.partialScore || 0;
+                let userAnswerText = '';
+                let correctAnswerText = '';
+                
+                if (q.type === 'multiple') {
+                    userAnswerText = answer.userAnswer !== null && answer.userAnswer !== undefined ? q.answers[answer.userAnswer] : '<span style="color: #999;">لم يجب</span>';
+                    correctAnswerText = q.answers[q.correct];
+                } else if (q.type === 'truefalse') {
+                    userAnswerText = answer.userAnswer !== null && answer.userAnswer !== undefined ? (answer.userAnswer ? 'صح' : 'خطأ') : '<span style="color: #999;">لم يجب</span>';
+                    correctAnswerText = q.correct ? 'صح' : 'خطأ';
+                } else if (q.type === 'text') {
+                    userAnswerText = answer.userAnswer || '<span style="color: #999;">لم يجب</span>';
+                    correctAnswerText = q.correct;
+                } else if (q.type === 'checkbox') {
+                    userAnswerText = answer.userAnswer && answer.userAnswer.length > 0 ? answer.userAnswer.map(i => q.answers[i]).join(' ، ') : '<span style="color: #999;">لم يجب</span>';
+                    correctAnswerText = q.correct.map(i => q.answers[i]).join(' ، ');
+                } else if (q.type === 'matching') {
+                    if (answer.userAnswer && answer.userAnswer.length > 0) {
+                        userAnswerText = q.pairs.map((p, i) => `${p.left} ⟷ ${answer.userAnswer[i] || '؟'}`).join(' | ');
+                    } else {
+                        userAnswerText = '<span style="color: #999;">لم يجب</span>';
+                    }
+                    correctAnswerText = q.pairs.map(p => `${p.left} ⟷ ${p.right}`).join(' | ');
+                } else if (q.type === 'ordering') {
+                    userAnswerText = answer.userAnswer && answer.userAnswer.length > 0 ? answer.userAnswer.join(' ← ') : '<span style="color: #999;">لم يجب</span>';
+                    correctAnswerText = q.correctOrder.join(' ← ');
+                }
+                
+                const bgColor = isCorrect ? '#d4edda' : (partialScore > 0 ? '#fff3cd' : '#f8d7da');
+                const borderColor = isCorrect ? '#28a745' : (partialScore > 0 ? '#ffc107' : '#dc3545');
+                const icon = isCorrect ? '✓' : (partialScore > 0 ? '◐' : '✗');
+                
+                html += `
+                    <div style="padding: 20px; background: ${bgColor}; border-radius: 10px; margin-bottom: 15px; border-right: 5px solid ${borderColor};">
+                        <h4 style="margin: 0 0 10px 0;">${icon} السؤال ${index + 1}: ${q.question}</h4>
+                        <p style="margin: 5px 0;"><strong>إجابتك:</strong> ${userAnswerText}</p>
+                        <p style="margin: 5px 0; color: #155724;"><strong>الإجابة الصحيحة:</strong> ${correctAnswerText}</p>
+                        ${partialScore > 0 && partialScore < 1 ? `<p style="margin: 5px 0; color: #856404;"><strong>النقاط:</strong> ${partialScore.toFixed(2)}/1</p>` : ''}
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        async function loginSuperAdmin(event) {
+            event.preventDefault();
+            const username = document.getElementById('superAdminUsername').value;
+            const password = document.getElementById('superAdminPassword').value;
+            
+            if (username === MASTER_USERNAME && password === MASTER_PASSWORD) {
+                isSuperAdmin = true;
+                showPage('superAdminPage');
+                renderEntitiesList();
+            } else {
+                showToast('اسم المستخدم أو كلمة المرور غير صحيحة', true);
+            }
+        }
+
+        async function addNewEntity() {
+            if (allData.length >= 999) {
+                showToast('تم الوصول للحد الأقصى من الجهات (999)', true);
+                return;
+            }
+
+            const name = document.getElementById('newEntityName').value;
+            const username = document.getElementById('newEntityAdminUsername').value;
+            const password = document.getElementById('newEntityAdminPassword').value;
+            
+            if (!name || !username || !password) {
+                showToast('يرجى ملء جميع الحقول', true);
+                return;
+            }
+            
+            const entityId = 'entity_' + Date.now();
+            const result = await window.dataSdk.create({
+                id: entityId,
+                type: 'entity',
+                entity_id: entityId,
+                entity_name: name,
+                admin_username: username,
+                admin_password: password,
+                members: JSON.stringify([]),
+                enrollment_config: JSON.stringify({ status: 'disabled', req_name: true }) // 🆕 إعدادات التسجيل الافتراضية
+            });
+            
+            if (result.isOk) {
+                showToast('تم إضافة الجهة بنجاح');
+                document.getElementById('newEntityName').value = '';
+                document.getElementById('newEntityAdminUsername').value = '';
+                document.getElementById('newEntityAdminPassword').value = '';
+            } else {
+                showToast('فشل إضافة الجهة', true);
+            }
+        }
+        
+        function exportBackup() {
+            const dataToExport = JSON.stringify(allData, null, 2);
+            const blob = new Blob([dataToExport], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_competition_data_${new Date().toISOString()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('تم تصدير النسخة الاحتياطية بنجاح');
+        }
+
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!Array.isArray(importedData)) {
+                        throw new Error('الملف ليس بتنسيق بيانات صحيح (Array)');
+                    }
+
+                    if (!confirm('هل أنت متأكد من استيراد هذه البيانات؟ سيتم دمجها مع البيانات الحالية.')) {
+                        return;
+                    }
+
+                    for (const item of importedData) {
+                        // عند الاستيراد، نستخدم دالة الإنشاء لضمان الحصول على معرف Firestore جديد
+                        const dataToImport = { ...item };
+                        delete dataToImport.__backendId; // حذف المعرف القديم
+                        const result = await window.dataSdk.create(dataToImport);
+                        if (!result.isOk) {
+                            console.error('فشل استيراد سجل:', item, result.error);
+                            showToast('فشل استيراد بعض السجلات', true);
+                        }
+                    }
+                    showToast('تم استيراد البيانات بنجاح.');
+                    // لا حاجة لإعادة التحميل، onSnapshot سيتولى الأمر
+                } catch (error) {
+                    console.error('فشل معالجة ملف الاستيراد:', error);
+                    showToast(`خطأ في قراءة الملف: ${error.message}`, true);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderEntitiesList() {
+            const container = document.getElementById('entitiesList');
+            if (!container) return;
+            
+            const entities = allData.filter(item => item.type === 'entity');
+            
+            if (entities.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">لا توجد جهات مسجلة</p>';
+                return;
+            }
+            
+            container.innerHTML = entities.map(entity => {
+                const members = JSON.parse(entity.members || '[]');
+                const quizzes = allData.filter(item => item.type === 'quiz' && item.entity_id === entity.id);
+                
+                return `
+                    <div class="entity-card">
+                        <h4>${entity.entity_name}</h4>
+                        <p style="margin: 5px 0; color: #666;">
+                            <strong>المدير:</strong> ${entity.admin_username}<br>
+                            <strong>عدد الأعضاء:</strong> ${members.length}<br>
+                            <strong>عدد المسابقات:</strong> ${quizzes.length}
+                        </p>
+                        <div class="entity-card-actions">
+                            <button class="btn" style="padding: 8px 20px;" onclick="editEntityCredentials('${entity.__backendId}')">تعديل بيانات المدير</button>
+                            <button class="btn btn-danger" style="padding: 8px 20px;" onclick="deleteEntity('${entity.__backendId}')">حذف</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function editEntityCredentials(backendId) {
+            const entity = allData.find(item => item.__backendId === backendId);
+            if (!entity) return;
+            
+            const newUsername = document.createElement('div');
+            newUsername.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 1000; min-width: 400px;';
+            newUsername.innerHTML = `
+                <h3 style="margin-top: 0;">تعديل بيانات المدير - ${entity.entity_name}</h3>
+                <div class="form-group">
+                    <label>اسم المستخدم الجديد:</label>
+                    <input type="text" id="editUsername" value="${entity.admin_username}">
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور الجديدة:</label>
+                    <input type="password" id="editPassword" value="${entity.admin_password}">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" style="flex: 1;" onclick="saveEntityCredentials('${backendId}')">حفظ</button>
+                    <button class="btn btn-secondary" style="flex: 1;" onclick="this.parentElement.parentElement.remove()">إلغاء</button>
+                </div>
+            `;
+            document.body.appendChild(newUsername);
+        }
+        
+        async function saveEntityCredentials(backendId) {
+            const entity = allData.find(item => item.__backendId === backendId);
+            if (!entity) return;
+            
+            const newUsername = document.getElementById('editUsername').value;
+            const newPassword = document.getElementById('editPassword').value;
+            
+            if (!newUsername || !newPassword) {
+                showToast('يرجى ملء جميع الحقول', true);
+                return;
+            }
+            
+            const updatedEntity = {
+                ...entity,
+                admin_username: newUsername,
+                admin_password: newPassword
+            };
+            
+            const result = await window.dataSdk.update(updatedEntity);
+            
+            if (result.isOk) {
+                showToast('تم تحديث البيانات بنجاح');
+                document.querySelector('[style*="position: fixed"]').remove();
+            } else {
+                showToast('فشل تحديث البيانات', true);
+            }
+        }
+
+        async function deleteEntity(backendId) {
+            const record = allData.find(item => item.__backendId === backendId);
+            if (record) {
+                const result = await window.dataSdk.delete(record);
+                if (result.isOk) {
+                    showToast('تم حذف الجهة بنجاح');
+                } else {
+                    showToast('فشل حذف الجهة', true);
+                }
+            }
+        }
+
+        function showEntityAdminLogin() {
+            showPage('entityAdminLoginPage');
+        }
+
+        function updateAdminDashboardUI(role) {
+            const container = document.querySelector('#entityAdminPage .entity-sections');
+            // الحفاظ على الأزرار الأساسية وإضافة الجديد
+            let baseHtml = '';
+            
+            if (role === 'manager') {
+                baseHtml += `
+                    <div id="managerSection">
+                        <div class="section-card" onclick="showMembersManagement()">
+                            <h3>🧑‍🤝‍🧑</h3>
+                            <h3>إدارة الأعضاء</h3>
+                        </div>
+                    </div>
+                    <div class="section-card" onclick="showClassesManagement()">
+                        <h3>🏫</h3>
+                        <h3>إدارة الفصول</h3>
+                    </div>
+                    <div class="section-card" onclick="showCertificateManagement()">
+                        <h3>🎓</h3>
+                        <h3>تصميم الشهادات</h3>
+                    </div>
+                    <div class="section-card" onclick="showEnrollmentSettings()" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
+                        <h3>✍️</h3>
+                        <h3>إعدادات التسجيل</h3>
+                    </div>
+                `;
+            } else if (role === 'member') {
+                // 🆕 التعديل: جلب جميع الفصول المسندة للعضو
+                const myClasses = allData.filter(item => item.type === 'class' && item.entity_id === currentEntityId && item.assigned_member_id === currentUserId);
+
+                if (myClasses.length > 0) {
+                    // إذا كان هناك أكثر من فصل، نعرض بطاقة لكل فصل
+                    myClasses.forEach(cls => {
+                        baseHtml += `
+                        <div class="section-card" onclick="showTeacherClass('${cls.id}')" data-class-id="${cls.id}">
+                            <h3>🏫</h3>
+                            <h3>فصلي الدراسي: ${cls.name}</h3>
+                        </div>`;
+                    });
+                } else {
+                    baseHtml += `
+                    <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px; color: #666;">
+                        <p>لا يوجد فصول دراسية مسندة إليك حالياً.</p>
+                    </div>`;
+                }
+            }
+
+            // الأزرار المشتركة
+            baseHtml += `
+                <div class="section-card" onclick="showAddQuizForm()">
+                    <h3>➕</h3>
+                    <h3>إضافة مسابقة</h3>
+                </div>
+                <div class="section-card" onclick="showMyQuizzes()">
+                    <h3>📋</h3>
+                    <h3>المسابقات والاختبارات</h3>
+                </div>
+            `;
+            
+            container.innerHTML = baseHtml;
+        }
+
+
+        async function loginEntityAdmin(event) {
+            event.preventDefault();
+            const username = document.getElementById('entityAdminUsername').value;
+            const password = document.getElementById('entityAdminPassword').value;
+            
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            if (!entity) return;
+            
+            // تحقق المدير
+            if ((username === MASTER_USERNAME && password === MASTER_PASSWORD) ||
+                (username === entity.admin_username && password === entity.admin_password)) {
+                currentUserId = 'admin';
+                currentUserRole = 'manager';
+                document.getElementById('loggedInUserName').textContent = username;
+                document.getElementById('userRole').textContent = 'مدير';
+                
+                // تحديث لوحة التحكم للمدير (إضافة الأزرار الجديدة)
+                updateAdminDashboardUI('manager');
+                
+                showPage('entityAdminPage');
+                return;
+            }
+            
+            // تحقق العضو
+            const members = JSON.parse(entity.members || '[]');
+            const member = members.find(m => m.username === username && m.password === password);
+            
+            if (member) {
+                currentUserId = member.id;
+                currentUserRole = 'member';
+                document.getElementById('loggedInUserName').textContent = username;
+                document.getElementById('userRole').textContent = 'عضو';
+                
+                // تحديث لوحة التحكم للعضو
+                updateAdminDashboardUI('member');
+                
+                showPage('entityAdminPage');
+            } else {
+                showToast('اسم المستخدم أو كلمة المرور غير صحيحة', true);
+            }
+        }
+
+        async function addMember() {
+            const username = document.getElementById('newMemberUsername').value;
+            const password = document.getElementById('newMemberPassword').value;
+            
+            if (!username || !password) {
+                showToast('يرجى ملء جميع الحقول', true);
+                return;
+            }
+            
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            if (!entity) return;
+            
+            const members = JSON.parse(entity.members || '[]');
+            const memberId = 'member_' + Date.now();
+            members.push({ id: memberId, username, password });
+            
+            const updatedEntity = { ...entity, members: JSON.stringify(members) };
+            const result = await window.dataSdk.update(updatedEntity);
+            
+            if (result.isOk) {
+                showToast('تم إضافة العضو بنجاح');
+                document.getElementById('newMemberUsername').value = '';
+                document.getElementById('newMemberPassword').value = '';
+            } else {
+                showToast('فشل إضافة العضو', true);
+            }
+        }
+
+        function renderMembersList() {
+            const container = document.getElementById('membersList');
+            if (!container) return;
+            
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            if (!entity) return;
+            
+            const members = JSON.parse(entity.members || '[]');
+            
+            if (members.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">لا توجد أعضاء</p>';
+                return;
+            }
+            
+            container.innerHTML = '<h4 style="margin-top: 20px;">الأعضاء:</h4>' + members.map(member => `
+                <div class="member-item">
+                    <div>
+                        <strong>${member.username}</strong>
+                    </div>
+                    <button class="btn btn-danger" style="width: auto; padding: 8px 20px;" onclick="deleteMember('${member.id}')">حذف</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteMember(memberId) {
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            if (!entity) return;
+            
+            const members = JSON.parse(entity.members || '[]');
+            const updatedMembers = members.filter(m => m.id !== memberId);
+            
+            const updatedEntity = { ...entity, members: JSON.stringify(updatedMembers) };
+            const result = await window.dataSdk.update(updatedEntity);
+            
+            if (result.isOk) {
+                showToast('تم حذف العضو بنجاح');
+            } else {
+                showToast('فشل حذف العضو', true);
+            }
+        }
+
+        let questionCounter = 0;
+        
+        function addQuestionForm() {
+            questionCounter++;
+            const container = document.getElementById('questionsContainer');
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'question-form';
+            questionDiv.id = `question_${questionCounter}`;
+            
+            questionDiv.innerHTML = `
+                <div class="question-form-header">
+                    <h4>السؤال ${questionCounter}</h4>
+                    <div>
+                        <button type="button" class="copy-question-btn" onclick="copyQuestion('question_${questionCounter}')">
+                            📄 نسخ السؤال
+                        </button>
+                        <button class="remove-question-btn" onclick="removeQuestion('question_${questionCounter}')">حذف السؤال</button>
+                    </div>
+                </div>
+                
+                <div class="form-group question-type-selector">
+                    <label>نوع السؤال:</label>
+                    <select id="qtype_${questionCounter}" onchange="updateQuestionType('question_${questionCounter}')">
+                        <option value="multiple">اختيار من متعدد</option>
+                        <option value="truefalse">صح أو خطأ</option>
+                        <option value="text">إجابة نصية</option>
+                        <option value="checkbox">اختيار متعدد (أكثر من إجابة)</option>
+                        <option value="matching">المطابقة</option>
+                        <option value="ordering">الترتيب الصحيح</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>نص السؤال:</label>
+                    <input type="text" id="qtext_${questionCounter}" placeholder="اكتب السؤال هنا" required>
+                </div>
+                
+                <div id="answers_${questionCounter}">
+                    </div>
+            `;
+            
+            container.appendChild(questionDiv);
+            updateQuestionType(`question_${questionCounter}`);
+        }
+        
+        function copyQuestion(sourceQuestionId) {
+            const sourceDiv = document.getElementById(sourceQuestionId);
+            if (!sourceDiv) return;
+
+            const qNum = sourceQuestionId.replace('question_', '');
+            const qText = document.getElementById(`qtext_${qNum}`).value;
+            const qType = document.getElementById(`qtype_${qNum}`).value;
+            const questionData = { question: qText, type: qType };
+
+            if (qType === 'multiple') {
+                const answersList = document.getElementById(`answers_list_${qNum}`);
+                const answers = [];
+                for (let j = 0; j < answersList.children.length; j++) {
+                    answers.push(document.getElementById(`ans_${qNum}_${j}`).value);
+                }
+                const correctRadio = document.querySelector(`input[name="correct_${qNum}"]:checked`);
+                questionData.answers = answers;
+                questionData.correct = correctRadio ? parseInt(correctRadio.value) : 0;
+
+            } else if (qType === 'truefalse') {
+                const correctRadio = document.querySelector(`input[name="correct_${qNum}"]:checked`);
+                questionData.correct = correctRadio ? correctRadio.value === 'true' : false;
+
+            } else if (qType === 'text') {
+                questionData.correct = document.getElementById(`correct_text_${qNum}`).value;
+
+            } else if (qType === 'checkbox') {
+                const answersList = document.getElementById(`answers_list_${qNum}`);
+                const answers = [];
+                const correct = [];
+                for (let j = 0; j < answersList.children.length; j++) {
+                    answers.push(document.getElementById(`ans_${qNum}_${j}`).value);
+                    const checkbox = answersList.children[j].querySelector(`input[type="checkbox"]`);
+                    if (checkbox && checkbox.checked) correct.push(j);
+                }
+                questionData.answers = answers;
+                questionData.correct = correct;
+
+            } else if (qType === 'matching') {
+                const matchingList = document.getElementById(`matching_list_${qNum}`);
+                const pairs = [];
+                for (let j = 0; j < matchingList.children.length; j++) {
+                    pairs.push({
+                        left: document.getElementById(`match_left_${qNum}_${j}`).value,
+                        right: document.getElementById(`match_right_${qNum}_${j}`).value
+                    });
+                }
+                questionData.pairs = pairs;
+
+            } else if (qType === 'ordering') {
+                const orderingList = document.getElementById(`ordering_list_${qNum}`);
+                const items = [];
+                for (let j = 0; j < orderingList.children.length; j++) {
+                    items.push(document.getElementById(`order_${qNum}_${j}`).value);
+                }
+                questionData.correctOrder = items;
+            }
+
+            questionCounter++;
+            const container = document.getElementById('questionsContainer');
+            const newQuestionId = `question_${questionCounter}`;
+            const newDiv = document.createElement('div');
+            newDiv.className = 'question-form';
+            newDiv.id = newQuestionId;
+
+            newDiv.innerHTML = `
+                <div class="question-form-header">
+                    <h4>السؤال ${questionCounter} (نسخة)</h4>
+                    <div>
+                        <button type="button" class="copy-question-btn" onclick="copyQuestion('${newQuestionId}')">
+                            📄 نسخ السؤال
+                        </button>
+                        <button class="remove-question-btn" onclick="removeQuestion('${newQuestionId}')">حذف السؤال</button>
+                    </div>
+                </div>
+                
+                <div class="form-group question-type-selector">
+                    <label>نوع السؤال:</label>
+                    <select id="qtype_${questionCounter}" onchange="updateQuestionType('${newQuestionId}')">
+                        <option value="multiple" ${qType === 'multiple' ? 'selected' : ''}>اختيار من متعدد</option>
+                        <option value="truefalse" ${qType === 'truefalse' ? 'selected' : ''}>صح أو خطأ</option>
+                        <option value="text" ${qType === 'text' ? 'selected' : ''}>إجابة نصية</option>
+                        <option value="checkbox" ${qType === 'checkbox' ? 'selected' : ''}>اختيار متعدد (أكثر من إجابة)</option>
+                        <option value="matching" ${qType === 'matching' ? 'selected' : ''}>المطابقة</option>
+                        <option value="ordering" ${qType === 'ordering' ? 'selected' : ''}>الترتيب الصحيح</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>نص السؤال:</label>
+                    <input type="text" id="qtext_${questionCounter}" value="${questionData.question}" required>
+                </div>
+                
+                <div id="answers_${questionCounter}"></div>
+            `;
+            
+            sourceDiv.insertAdjacentElement('afterend', newDiv);
+            updateQuestionTypeWithData(newQuestionId, questionData);
+            showToast('تم نسخ السؤال بنجاح');
+        }
+
+        function updateQuestionType(questionId) {
+            const qNum = questionId.replace('question_', '');
+            const type = document.getElementById(`qtype_${qNum}`).value;
+            const answersContainer = document.getElementById(`answers_${qNum}`);
+            
+            if (type === 'multiple') {
+                answersContainer.innerHTML = `
+                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">الإجابات (اختر الإجابة الصحيحة):</label>
+                    <div id="answers_list_${qNum}">
+                        <div class="answer-input-group">
+                            <input type="radio" name="correct_${qNum}" value="0" checked>
+                            <input type="text" placeholder="الإجابة 1" id="ans_${qNum}_0" required>
+                        </div>
+                        <div class="answer-input-group">
+                            <input type="radio" name="correct_${qNum}" value="1">
+                            <input type="text" placeholder="الإجابة 2" id="ans_${qNum}_1" required>
+                        </div>
+                    </div>
+                    <button type="button" class="add-answer-btn" onclick="addAnswerOption('${qNum}')">+ إضافة إجابة</button>
+                `;
+            } else if (type === 'truefalse') {
+                answersContainer.innerHTML = `
+                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">الإجابة الصحيحة:</label>
+                    <div class="answer-input-group">
+                        <input type="radio" name="correct_${qNum}" value="true" checked>
+                        <label>صح</label>
+                    </div>
+                    <div class="answer-input-group">
+                        <input type="radio" name="correct_${qNum}" value="false">
+                        <label>خطأ</label>
+                    </div>
+                `;
+            } else if (type === 'text') {
+                answersContainer.innerHTML = `
+                    <div class="form-group">
+                        <label>الإجابة الصحيحة:</label>
+                        <input type="text" id="correct_text_${qNum}" placeholder="الإجابة المتوقعة" required>
+                    </div>
+                `;
+            } else if (type === 'checkbox') {
+                answersContainer.innerHTML = `
+                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">الإجابات (اختر الإجابات الصحيحة):</label>
+                    <div id="answers_list_${qNum}">
+                        <div class="answer-input-group">
+                            <input type="checkbox" class="correct_checkbox_${qNum}" value="0" checked>
+                            <input type="text" placeholder="الإجابة 1" id="ans_${qNum}_0" required>
+                        </div>
+                        <div class="answer-input-group">
+                            <input type="checkbox" class="correct_checkbox_${qNum}" value="1">
+                            <input type="text" placeholder="الإجابة 2" id="ans_${qNum}_1" required>
+                        </div>
+                    </div>
+                    <button type="button" class="add-answer-btn" onclick="addAnswerOptionCheckbox('${qNum}')">+ إضافة إجابة</button>
+                `;
+            } else if (type === 'matching') {
+                answersContainer.innerHTML = `
+                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">أزواج المطابقة:</label>
+                    <div id="matching_list_${qNum}">
+                        <div class="answer-input-group">
+                            <input type="text" placeholder="العنصر 1" id="match_left_${qNum}_0" required style="flex: 1;">
+                            <span style="margin: 0 10px;">⟷</span>
+                            <input type="text" placeholder="المطابق 1" id="match_right_${qNum}_0" required style="flex: 1;">
+                        </div>
+                        <div class="answer-input-group">
+                            <input type="text" placeholder="العنصر 2" id="match_left_${qNum}_1" required style="flex: 1;">
+                            <span style="margin: 0 10px;">⟷</span>
+                            <input type="text" placeholder="المطابق 2" id="match_right_${qNum}_1" required style="flex: 1;">
+                        </div>
+                    </div>
+                    <button type="button" class="add-answer-btn" onclick="addMatchingPair('${qNum}')">+ إضافة زوج</button>
+                `;
+            } else if (type === 'ordering') {
+                answersContainer.innerHTML = `
+                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">العناصر بالترتيب الصحيح:</label>
+                    <div id="ordering_list_${qNum}">
+                        <div class="answer-input-group">
+                            <span style="font-weight: bold;">1.</span>
+                            <input type="text" placeholder="العنصر الأول" id="order_${qNum}_0" required>
+                        </div>
+                        <div class="answer-input-group">
+                            <span style="font-weight: bold;">2.</span>
+                            <input type="text" placeholder="العنصر الثاني" id="order_${qNum}_1" required>
+                        </div>
+                    </div>
+                    <button type="button" class="add-answer-btn" onclick="addOrderingItem('${qNum}')">+ إضافة عنصر</button>
+                `;
+            }
+        }
+        
+        function addAnswerOption(qNum) {
+            const list = document.getElementById(`answers_list_${qNum}`);
+            const count = list.children.length;
+            const div = document.createElement('div');
+            div.className = 'answer-input-group';
+            div.innerHTML = `
+                <input type="radio" name="correct_${qNum}" value="${count}">
+                <input type="text" placeholder="الإجابة ${count + 1}" id="ans_${qNum}_${count}" required>
+                <button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>
+            `;
+            list.appendChild(div);
+        }
+        
+        function addAnswerOptionCheckbox(qNum) {
+            const list = document.getElementById(`answers_list_${qNum}`);
+            const count = list.children.length;
+            const div = document.createElement('div');
+            div.className = 'answer-input-group';
+            div.innerHTML = `
+                <input type="checkbox" class="correct_checkbox_${qNum}" value="${count}">
+                <input type="text" placeholder="الإجابة ${count + 1}" id="ans_${qNum}_${count}" required>
+                <button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>
+            `;
+            list.appendChild(div);
+        }
+        
+        function addMatchingPair(qNum) {
+            const list = document.getElementById(`matching_list_${qNum}`);
+            const count = list.children.length;
+            const div = document.createElement('div');
+            div.className = 'answer-input-group';
+            div.innerHTML = `
+                <input type="text" placeholder="العنصر ${count + 1}" id="match_left_${qNum}_${count}" required style="flex: 1;">
+                <span style="margin: 0 10px;">⟷</span>
+                <input type="text" placeholder="المطابق ${count + 1}" id="match_right_${qNum}_${count}" required style="flex: 1;">
+                <button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>
+            `;
+            list.appendChild(div);
+        }
+        
+        function addOrderingItem(qNum) {
+            const list = document.getElementById(`ordering_list_${qNum}`);
+            const count = list.children.length;
+            const div = document.createElement('div');
+            div.className = 'answer-input-group';
+            div.innerHTML = `
+                <span style="font-weight: bold;">${count + 1}.</span>
+                <input type="text" placeholder="العنصر ${count + 1}" id="order_${qNum}_${count}" required>
+                <button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>
+            `;
+            list.appendChild(div);
+        }
+        
+        function removeQuestion(questionId) {
+            document.getElementById(questionId).remove();
+        }
+        
+        async function saveQuiz() {
+            const saveBtn = document.getElementById('saveQuizBtn');
+            const originalText = saveBtn.textContent;
+            
+            if (allData.length >= 999) {
+                showToast('تم الوصول للحد الأقصى من السجلات (999)', true);
+                return;
+            }
+
+            const title = document.getElementById('quizTitle').value;
+            const type = document.getElementById('quizType').value;
+            const visibility = document.getElementById('quizVisibility').value;
+            const timeLimit = parseInt(document.getElementById('quizTimer').value) || 0;
+            const enableCert = document.getElementById('enableCertificate').checked;
+            
+            if (!title) {
+                showToast('يرجى إدخال عنوان المسابقة', true);
+                return;
+            }
+            
+            const questionsContainer = document.getElementById('questionsContainer');
+            if (questionsContainer.children.length === 0) {
+                showToast('يرجى إضافة سؤال واحد على الأقل', true);
+                return;
+            }
+            
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'جاري الحفظ...';
+
+            const questions = [];
+            
+            try {
+                for (let i = 0; i < questionsContainer.children.length; i++) {
+                    const qDiv = questionsContainer.children[i];
+                    const qNum = qDiv.id.replace('question_', '');
+                    const qText = document.getElementById(`qtext_${qNum}`).value;
+                    const qType = document.getElementById(`qtype_${qNum}`).value;
+                    
+                    if (!qText) {
+                        showToast(`يرجى إدخال نص السؤال ${i + 1}`, true);
+                        saveBtn.disabled = false; saveBtn.textContent = originalText; return;
+                    }
+                    
+                    const questionData = { question: qText, type: qType };
+                    
+                    if (qType === 'multiple') {
+                        const answersList = document.getElementById(`answers_list_${qNum}`);
+                        const answers = [];
+                        for (let j = 0; j < answersList.children.length; j++) {
+                            const ansText = document.getElementById(`ans_${qNum}_${j}`).value;
+                            if (!ansText) { showToast(`يرجى إدخال نص الإجابة ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            answers.push(ansText);
+                        }
+                        const correctRadio = document.querySelector(`input[name="correct_${qNum}"]:checked`);
+                        questionData.answers = answers;
+                        questionData.correct = parseInt(correctRadio.value);
+                    } else if (qType === 'truefalse') {
+                        const correctRadio = document.querySelector(`input[name="correct_${qNum}"]:checked`);
+                        questionData.correct = correctRadio.value === 'true';
+                    } else if (qType === 'text') {
+                        const correctText = document.getElementById(`correct_text_${qNum}`).value;
+                        if (!correctText) { showToast(`يرجى إدخال الإجابة الصحيحة للسؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                        questionData.correct = correctText;
+                    } else if (qType === 'checkbox') {
+                        const answersList = document.getElementById(`answers_list_${qNum}`);
+                        const answers = [];
+                        const correct = [];
+                        for (let j = 0; j < answersList.children.length; j++) {
+                            const ansText = document.getElementById(`ans_${qNum}_${j}`).value;
+                            if (!ansText) { showToast(`يرجى إدخال نص الإجابة ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            answers.push(ansText);
+                            const checkbox = answersList.children[j].querySelector(`input[type="checkbox"]`);
+                            if (checkbox.checked) correct.push(j);
+                        }
+                        if (correct.length === 0) { showToast(`يرجى اختيار إجابة صحيحة واحدة على الأقل للسؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                        questionData.answers = answers;
+                        questionData.correct = correct;
+                    } else if (qType === 'matching') {
+                        const matchingList = document.getElementById(`matching_list_${qNum}`);
+                        const pairs = [];
+                        for (let j = 0; j < matchingList.children.length; j++) {
+                            const left = document.getElementById(`match_left_${qNum}_${j}`).value;
+                            const right = document.getElementById(`match_right_${qNum}_${j}`).value;
+                            if (!left || !right) { showToast(`يرجى إدخال الزوج ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            pairs.push({ left, right });
+                        }
+                        questionData.pairs = pairs;
+                    } else if (qType === 'ordering') {
+                        const orderingList = document.getElementById(`ordering_list_${qNum}`);
+                        const items = [];
+                        for (let j = 0; j < orderingList.children.length; j++) {
+                            const item = document.getElementById(`order_${qNum}_${j}`).value;
+                            if (!item) { showToast(`يرجى إدخال العنصر ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            items.push(item);
+                        }
+                        questionData.correctOrder = items;
+                    }
+                    
+                    questions.push(questionData);
+                }
+            
+                const quizId = 'quiz_' + Date.now();
+                const result = await window.dataSdk.create({
+                    id: quizId,
+                    type: 'quiz',
+                    entity_id: currentEntityId,
+                    quiz_title: title,
+                    quiz_type: type,
+                    visibility: visibility,
+                    creator_id: currentUserId,
+                    questions: JSON.stringify(questions),
+                    time_limit: timeLimit, 
+                    enable_cert: enableCert
+                });
+                
+                if (result.isOk) {
+                    showToast('تم إضافة المسابقة بنجاح');
+                    showMyQuizzes();
+                } else {
+                    throw new Error("فشل الحفظ");
+                }
+            } catch (error) {
+                console.error("Save Quiz Failed:", error);
+                showToast('فشل إضافة المسابقة', true);
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            }
+        }
+
+        function renderAdminQuizzes() {
+            const container = document.getElementById('adminQuizzesList');
+            if (!container) return;
+            
+            let quizzes = allData.filter(item => item.type === 'quiz' && item.entity_id === currentEntityId);
+            
+            if (currentUserRole === 'member') {
+                quizzes = quizzes.filter(q => q.creator_id === currentUserId);
+            }
+            
+            if (quizzes.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">لا توجد مسابقات</p>';
+                return;
+            }
+            
+            container.innerHTML = quizzes.map(quiz => {
+                const results = allData.filter(item => item.type === 'result' && item.quiz_title === quiz.quiz_title && item.entity_id === currentEntityId);
+                const questions = JSON.parse(quiz.questions);
+                const totalQuestions = questions.length;
+                const participantsCount = results.length;
+                const averageScore = participantsCount > 0 ? (results.reduce((sum, r) => sum + r.score, 0) / participantsCount).toFixed(2) : 0;
+                const highestScore = participantsCount > 0 ? Math.max(...results.map(r => r.score)).toFixed(2) : 0;
+                const lowestScore = participantsCount > 0 ? Math.min(...results.map(r => r.score)).toFixed(2) : 0;
+                
+                return `
+                    <div class="quiz-item">
+                        <h4>${quiz.quiz_title}</h4>
+                        <div class="quiz-item-meta">
+                            <span>النوع: ${quiz.quiz_type === 'quiz' ? 'اختبار' : 'مسابقة'}</span>
+                            <span>الرؤية: ${quiz.visibility === 'public' ? 'عام' : 'خاص'}</span>
+                            <span>عدد الأسئلة: ${totalQuestions}</span>
+                        </div>
+                        
+                        ${participantsCount > 0 ? `
+                            <div class="stats-summary">
+                                <h5>📊 ملخص النتائج:</h5>
+                                <div class="stats-grid">
+                                    <div><strong>عدد المشاركين:</strong> ${participantsCount}</div>
+                                    <div><strong>المتوسط:</strong> ${averageScore}/${totalQuestions}</div>
+                                    <div><strong>أعلى نتيجة:</strong> ${highestScore}/${totalQuestions}</div>
+                                    <div><strong>أقل نتيجة:</strong> ${lowestScore}/${totalQuestions}</div>
+                                </div>
+                                <button class="btn" style="margin-top: 10px; padding: 8px 20px;" onclick="showQuizParticipants('${quiz.__backendId}')">📋 عرض إجابات المشاركين</button>
+                            </div>
+                        ` : '<p style="margin: 10px 0; color: #999; font-style: italic;">لا توجد نتائج بعد</p>'}
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn" style="width: auto; padding: 8px 20px; flex: 1;" onclick="editQuiz('${quiz.__backendId}')">تعديل</button>
+                            <button class="btn" style="width: auto; padding: 8px 20px; flex: 1; background: #17a2b8;" onclick="printQuiz('${quiz.__backendId}')">🖨️ طباعة</button>
+                            <button class="btn btn-secondary" style="width: auto; padding: 8px 20px; flex: 1;" onclick="copyQuiz('${quiz.__backendId}')">📋 نسخ المسابقة</button>
+                            <button class="btn btn-danger" style="width: auto; padding: 8px 20px; flex: 1;" onclick="deleteQuiz('${quiz.__backendId}')">حذف</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function copyQuiz(backendId) {
+            if (allData.length >= 999) { showToast('تم الوصول للحد الأقصى من السجلات (999)', true); return; }
+            const quiz = allData.find(item => item.__backendId === backendId);
+            if (!quiz) { showToast('المسابقة غير موجودة', true); return; }
+            const dateStr = new Date().toLocaleDateString('ar-SA');
+            const newTitle = `نسخة من ${quiz.quiz_title} (${dateStr})`;
+            const newQuiz = {
+                ...quiz, __backendId: undefined, id: 'quiz_' + Date.now(),
+                quiz_title: newTitle, questions: quiz.questions,
+                time_limit: quiz.time_limit || 0, enable_cert: quiz.enable_cert || false
+            };
+            const result = await window.dataSdk.create(newQuiz);
+            if (result.isOk) { showToast('تم نسخ المسابقة بنجاح: ' + newTitle); } else { showToast('فشل نسخ المسابقة', true); }
+        }
+
+
+        function editQuiz(backendId) {
+            const quiz = allData.find(item => item.__backendId === backendId);
+            if (!quiz) return;
+            document.getElementById('quizTitle').value = quiz.quiz_title;
+            document.getElementById('quizType').value = quiz.quiz_type;
+            document.getElementById('quizVisibility').value = quiz.visibility;
+            document.getElementById('quizTimer').value = quiz.time_limit || 0;
+            document.getElementById('enableCertificate').checked = quiz.enable_cert || false;
+            
+            const questions = JSON.parse(quiz.questions);
+            const questionsContainer = document.getElementById('questionsContainer');
+            questionsContainer.innerHTML = '';
+            questionCounter = 0;
+            
+            questions.forEach((q, index) => {
+                questionCounter++;
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question-form';
+                questionDiv.id = `question_${questionCounter}`;
+                
+                questionDiv.innerHTML = `
+                    <div class="question-form-header">
+                        <h4>السؤال ${questionCounter}</h4>
+                        <div>
+                            <button type="button" class="copy-question-btn" onclick="copyQuestion('question_${questionCounter}')">
+                                📄 نسخ السؤال
+                            </button>
+                            <button class="remove-question-btn" onclick="removeQuestion('question_${questionCounter}')">حذف السؤال</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group question-type-selector">
+                        <label>نوع السؤال:</label>
+                        <select id="qtype_${questionCounter}" onchange="updateQuestionType('question_${questionCounter}')">
+                            <option value="multiple" ${q.type === 'multiple' ? 'selected' : ''}>اختيار من متعدد</option>
+                            <option value="truefalse" ${q.type === 'truefalse' ? 'selected' : ''}>صح أو خطأ</option>
+                            <option value="text" ${q.type === 'text' ? 'selected' : ''}>إجابة نصية</option>
+                            <option value="checkbox" ${q.type === 'checkbox' ? 'selected' : ''}>اختيار متعدد (أكثر من إجابة)</option>
+                            <option value="matching" ${q.type === 'matching' ? 'selected' : ''}>المطابقة</option>
+                            <option value="ordering" ${q.type === 'ordering' ? 'selected' : ''}>الترتيب الصحيح</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>نص السؤال:</label>
+                        <input type="text" id="qtext_${questionCounter}" value="${q.question}" required>
+                    </div>
+                    
+                    <div id="answers_${questionCounter}"></div>
+                `;
+                
+                questionsContainer.appendChild(questionDiv);
+                updateQuestionTypeWithData(`question_${questionCounter}`, q);
+            });
+            
+            document.getElementById('saveQuizBtn').disabled = false;
+            document.getElementById('saveQuizBtn').onclick = () => updateQuiz(backendId);
+            document.getElementById('saveQuizBtn').textContent = 'تحديث المسابقة';
+            showPage('addQuizPage');
+        }
+        
+        function updateQuestionTypeWithData(questionId, questionData) {
+            const qNum = questionId.replace('question_', '');
+            const type = document.getElementById(`qtype_${qNum}`).value;
+            const answersContainer = document.getElementById(`answers_${qNum}`);
+            
+            if (type === 'multiple') {
+                let answersHtml = `<label style="font-weight: bold; display: block; margin-bottom: 10px;">الإجابات (اختر الإجابة الصحيحة):</label><div id="answers_list_${qNum}">`;
+                questionData.answers.forEach((ans, i) => {
+                    answersHtml += `<div class="answer-input-group">
+                            <input type="radio" name="correct_${qNum}" value="${i}" ${i === questionData.correct ? 'checked' : ''}>
+                            <input type="text" value="${ans}" id="ans_${qNum}_${i}" required>
+                            ${i > 1 ? '<button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>' : ''}
+                        </div>`;
+                });
+                answersHtml += `</div><button type="button" class="add-answer-btn" onclick="addAnswerOption('${qNum}')">+ إضافة إجابة</button>`;
+                answersContainer.innerHTML = answersHtml;
+            } else if (type === 'truefalse') {
+                answersContainer.innerHTML = `
+                    <label style="font-weight: bold; display: block; margin-bottom: 10px;">الإجابة الصحيحة:</label>
+                    <div class="answer-input-group">
+                        <input type="radio" name="correct_${qNum}" value="true" ${questionData.correct === true ? 'checked' : ''}>
+                        <label>صح</label>
+                    </div>
+                    <div class="answer-input-group">
+                        <input type="radio" name="correct_${qNum}" value="false" ${questionData.correct === false ? 'checked' : ''}>
+                        <label>خطأ</label>
+                    </div>
+                `;
+            } else if (type === 'text') {
+                answersContainer.innerHTML = `<div class="form-group"><label>الإجابة الصحيحة:</label><input type="text" id="correct_text_${qNum}" value="${questionData.correct}" required></div>`;
+            } else if (type === 'checkbox') {
+                let answersHtml = `<label style="font-weight: bold; display: block; margin-bottom: 10px;">الإجابات (اختر الإجابات الصحيحة):</label><div id="answers_list_${qNum}">`;
+                questionData.answers.forEach((ans, i) => {
+                    answersHtml += `<div class="answer-input-group">
+                            <input type="checkbox" class="correct_checkbox_${qNum}" value="${i}" ${questionData.correct.includes(i) ? 'checked' : ''}>
+                            <input type="text" value="${ans}" id="ans_${qNum}_${i}" required>
+                            ${i > 1 ? '<button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>' : ''}
+                        </div>`;
+                });
+                answersHtml += `</div><button type="button" class="add-answer-btn" onclick="addAnswerOptionCheckbox('${qNum}')">+ إضافة إجابة</button>`;
+                answersContainer.innerHTML = answersHtml;
+            } else if (type === 'matching') {
+                let answersHtml = `<label style="font-weight: bold; display: block; margin-bottom: 10px;">أزواج المطابقة:</label><div id="matching_list_${qNum}">`;
+                questionData.pairs.forEach((pair, i) => {
+                    answersHtml += `<div class="answer-input-group">
+                            <input type="text" value="${pair.left}" id="match_left_${qNum}_${i}" required style="flex: 1;">
+                            <span style="margin: 0 10px;">⟷</span>
+                            <input type="text" value="${pair.right}" id="match_right_${qNum}_${i}" required style="flex: 1;">
+                            ${i > 1 ? '<button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>' : ''}
+                        </div>`;
+                });
+                answersHtml += `</div><button type="button" class="add-answer-btn" onclick="addMatchingPair('${qNum}')">+ إضافة زوج</button>`;
+                answersContainer.innerHTML = answersHtml;
+            } else if (type === 'ordering') {
+                let answersHtml = `<label style="font-weight: bold; display: block; margin-bottom: 10px;">العناصر بالترتيب الصحيح:</label><div id="ordering_list_${qNum}">`;
+                questionData.correctOrder.forEach((item, i) => {
+                    answersHtml += `<div class="answer-input-group">
+                            <span style="font-weight: bold;">${i + 1}.</span>
+                            <input type="text" value="${item}" id="order_${qNum}_${i}" required>
+                            ${i > 1 ? '<button type="button" class="remove-answer-btn" onclick="this.parentElement.remove()">×</button>' : ''}
+                        </div>`;
+                });
+                answersHtml += `</div><button type="button" class="add-answer-btn" onclick="addOrderingItem('${qNum}')">+ إضافة عنصر</button>`;
+                answersContainer.innerHTML = answersHtml;
+            }
+        }
+        
+        async function updateQuiz(backendId) {
+            const saveBtn = document.getElementById('saveQuizBtn');
+            const originalText = saveBtn.textContent;
+            
+            const quiz = allData.find(item => item.__backendId === backendId);
+            if (!quiz) return;
+            
+            const title = document.getElementById('quizTitle').value;
+            const type = document.getElementById('quizType').value;
+            const visibility = document.getElementById('quizVisibility').value;
+            const timeLimit = parseInt(document.getElementById('quizTimer').value) || 0;
+            const enableCert = document.getElementById('enableCertificate').checked;
+            
+            if (!title) { showToast('يرجى إدخال عنوان المسابقة', true); return; }
+            const questionsContainer = document.getElementById('questionsContainer');
+            if (questionsContainer.children.length === 0) { showToast('يرجى إضافة سؤال واحد على الأقل', true); return; }
+            
+            saveBtn.disabled = true; saveBtn.textContent = 'جاري التحديث...';
+
+            const questions = [];
+            
+            try {
+                for (let i = 0; i < questionsContainer.children.length; i++) {
+                    const qDiv = questionsContainer.children[i];
+                    const qNum = qDiv.id.replace('question_', '');
+                    const qText = document.getElementById(`qtext_${qNum}`).value;
+                    const qType = document.getElementById(`qtype_${qNum}`).value;
+                    
+                    if (!qText) { showToast(`يرجى إدخال نص السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                    
+                    const questionData = { question: qText, type: qType };
+                    
+                    if (qType === 'multiple') {
+                        const answersList = document.getElementById(`answers_list_${qNum}`);
+                        const answers = [];
+                        for (let j = 0; j < answersList.children.length; j++) {
+                            const ansText = document.getElementById(`ans_${qNum}_${j}`).value;
+                            if (!ansText) { showToast(`يرجى إدخال نص الإجابة ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            answers.push(ansText);
+                        }
+                        const correctRadio = document.querySelector(`input[name="correct_${qNum}"]:checked`);
+                        questionData.answers = answers;
+                        questionData.correct = parseInt(correctRadio.value);
+                    } else if (qType === 'truefalse') {
+                        const correctRadio = document.querySelector(`input[name="correct_${qNum}"]:checked`);
+                        questionData.correct = correctRadio.value === 'true';
+                    } else if (qType === 'text') {
+                        const correctText = document.getElementById(`correct_text_${qNum}`).value;
+                        if (!correctText) { showToast(`يرجى إدخال الإجابة الصحيحة للسؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                        questionData.correct = correctText;
+                    } else if (qType === 'checkbox') {
+                        const answersList = document.getElementById(`answers_list_${qNum}`);
+                        const answers = [];
+                        const correct = [];
+                        for (let j = 0; j < answersList.children.length; j++) {
+                            const ansText = document.getElementById(`ans_${qNum}_${j}`).value;
+                            if (!ansText) { showToast(`يرجى إدخال نص الإجابة ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            answers.push(ansText);
+                            const checkbox = answersList.children[j].querySelector(`input[type="checkbox"]`);
+                            if (checkbox.checked) correct.push(j);
+                        }
+                        if (correct.length === 0) { showToast(`يرجى اختيار إجابة صحيحة واحدة على الأقل للسؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                        questionData.answers = answers;
+                        questionData.correct = correct;
+                    } else if (qType === 'matching') {
+                        const matchingList = document.getElementById(`matching_list_${qNum}`);
+                        const pairs = [];
+                        for (let j = 0; j < matchingList.children.length; j++) {
+                            const left = document.getElementById(`match_left_${qNum}_${j}`).value;
+                            const right = document.getElementById(`match_right_${qNum}_${j}`).value;
+                            if (!left || !right) { showToast(`يرجى إدخال الزوج ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            pairs.push({ left, right });
+                        }
+                        questionData.pairs = pairs;
+                    } else if (qType === 'ordering') {
+                        const orderingList = document.getElementById(`ordering_list_${qNum}`);
+                        const items = [];
+                        for (let j = 0; j < orderingList.children.length; j++) {
+                            const item = document.getElementById(`order_${qNum}_${j}`).value;
+                            if (!item) { showToast(`يرجى إدخال العنصر ${j + 1} في السؤال ${i + 1}`, true); saveBtn.disabled = false; saveBtn.textContent = originalText; return; }
+                            items.push(item);
+                        }
+                        questionData.correctOrder = items;
+                    }
+                    
+                    questions.push(questionData);
+                }
+                
+                const updatedQuiz = {
+                    ...quiz, quiz_title: title, quiz_type: type, visibility: visibility,
+                    questions: JSON.stringify(questions), time_limit: timeLimit, enable_cert: enableCert
+                };
+                
+                const result = await window.dataSdk.update(updatedQuiz);
+                
+                if (result.isOk) {
+                    showToast('تم تحديث المسابقة بنجاح');
+                    document.getElementById('saveQuizBtn').onclick = saveQuiz;
+                    document.getElementById('saveQuizBtn').textContent = 'حفظ المسابقة';
+                    saveBtn.disabled = false;
+                    showMyQuizzes();
+                } else {
+                    throw new Error("فشل التحديث");
+                }
+            } catch (error) {
+                console.error("Update Quiz Failed:", error);
+                showToast('فشل تحديث المسابقة', true);
+                saveBtn.disabled = false;
+                saveBtn.textContent = originalText;
+            }
+        }
+
+        async function deleteQuiz(backendId) {
+            const record = allData.find(item => item.__backendId === backendId);
+            if (record) {
+                const result = await window.dataSdk.delete(record);
+                if (result.isOk) { showToast('تم حذف المسابقة بنجاح'); } else { showToast('فشل حذف المسابقة', true); }
+            }
+        }
+
+        function printQuiz(backendId) {
+            const quiz = allData.find(item => item.__backendId === backendId);
+            if (!quiz) return;
+            const questions = JSON.parse(quiz.questions);
+            const entity = allData.find(e => e.type === 'entity' && e.id === quiz.entity_id);
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>طباعة - ${quiz.quiz_title}</title>
+                    <style> @media print { @page { size: A4; margin: 2cm; } .no-print { display: none; } }
+                        body { font-family: 'Traditional Arabic', 'Arial', sans-serif; line-height: 1.8; color: #000; background: white; padding: 20px; max-width: 210mm; margin: 0 auto; }
+                        .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 20px; margin-bottom: 30px; }
+                        .header h1 { font-size: 28px; margin: 10px 0; font-weight: bold; }
+                        .info-section { display: flex; justify-content: space-between; margin: 20px 0 30px 0; padding: 15px; border: 2px solid #000; background: #f9f9f9; }
+                        .question { margin: 25px 0; padding: 15px; border: 2px solid #333; border-radius: 8px; background: white; page-break-inside: avoid; }
+                        .question-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ddd; }
+                        .question-text { margin-bottom: 10px; }
+                        .answer-option { display: block; padding: 10px 15px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; background: #fafafa; font-size: 15px; }
+                        .answer-option::before { content: "○"; margin-left: 10px; font-size: 18px; }
+                        .answer-space { margin-top: 15px; padding: 15px; border: 1px dashed #999; min-height: 60px; background: #f9f9f9; }
+                        .answer-space::before { content: "الإجابة: "; font-weight: bold; color: #666; }
+                        .matching-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        .matching-table td { padding: 12px; border: 1px solid #333; font-size: 15px; }
+                        .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 2px solid #000; font-size: 14px; color: #666; }
+                        .print-button { position: fixed; top: 20px; left: 20px; background: #667eea; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 1000; }
+                    </style>
+                </head>
+                <body>
+                    <button class="print-button no-print" onclick="window.print()">🖨️ طباعة</button>
+                    <div class="header"><h1>${quiz.quiz_title}</h1><p>${entity ? entity.entity_name : ''}</p><p>${quiz.quiz_type === 'quiz' ? 'اختبار' : 'مسابقة'} - ${quiz.visibility === 'public' ? 'عام' : 'خاص'}</p></div>
+                    <div class="info-section"><div class="info-item"><strong>الاسم:</strong> _______________________________</div><div class="info-item"><strong>التاريخ:</strong> _______________________________</div></div>
+                    <div class="info-section"><div class="info-item"><strong>عدد الأسئلة:</strong> ${questions.length}</div><div class="info-item"><strong>الدرجة الكلية:</strong> ${questions.length}</div><div class="info-item"><strong>الدرجة المستحقة:</strong> _______</div></div>
+                    ${generatePrintableQuestions(questions)}
+                    <div class="footer"><p>بالتوفيق والنجاح</p><p>تم الإنشاء بواسطة موقع المسابقات التفاعلي</p></div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+        
+        function generatePrintableQuestions(questions) {
+            let html = '';
+            questions.forEach((q, index) => {
+                html += `<div class="question"><div class="question-header">السؤال ${index + 1}</div><div class="question-text">${q.question}</div>`;
+                if (q.type === 'multiple') {
+                    html += `<div class="answers">`;
+                    q.answers.forEach((answer, i) => { html += `<div class="answer-option">${answer}</div>`; });
+                    html += `</div>`;
+                } else if (q.type === 'truefalse') {
+                    html += `<div class="answers"><div class="answer-option">صح</div><div class="answer-option">خطأ</div></div>`;
+                } else if (q.type === 'text') {
+                    html += `<div class="answer-space"></div>`;
+                } else if (q.type === 'checkbox') {
+                    html += `<div class="answers"><p style="margin: 10px 0; font-weight: bold; color: #666;">(اختر أكثر من إجابة)</p>`;
+                    q.answers.forEach((answer, i) => { html += `<div class="answer-option">${answer}</div>`; });
+                    html += `</div>`;
+                } else if (q.type === 'matching') {
+                    html += `<p style="margin: 10px 0; font-weight: bold; color: #666;">صل العمود الأيمن بما يناسبه من العمود الأيسر:</p><table class="matching-table">`;
+                    const shuffledRight = [...q.pairs.map(p => p.right)].sort(() => Math.random() - 0.5);
+                    q.pairs.forEach((pair, i) => { html += `<tr><td class="left-col">${pair.left}</td><td class="answer-col">( )</td><td class="right-col">${shuffledRight[i]}</td></tr>`; });
+                    html += `</table>`;
+                } else if (q.type === 'ordering') {
+                    html += `<p style="margin: 10px 0; font-weight: bold; color: #666;">رتب العناصر التالية بالترتيب الصحيح:</p><div class="ordering-items">`;
+                    const shuffled = [...q.correctOrder].sort(() => Math.random() - 0.5);
+                    shuffled.forEach((item, i) => { html += `<div class="ordering-item">( ) ${item}</div>`; });
+                    html += `</div>`;
+                }
+                html += `</div>`;
+            });
+            return html;
+        }
+        
+        function showQuizzesSection() {
+            document.getElementById('quizzesBackBtn').onclick = goBackToEntity;
+            renderQuizzesList();
+            showPage('quizzesPage');
+        }
+
+        function showPublicQuizzes() {
+            document.getElementById('quizzesBackBtn').onclick = goToHome;
+            currentEntityId = null;
+            renderQuizzesList();
+            showPage('quizzesPage');
+        }
+
+        function renderQuizzesList() {
+            const container = document.getElementById('quizzesList');
+            if (!container) return;
+            
+            let quizzes;
+            if (currentEntityId) {
+                quizzes = allData.filter(item => item.type === 'quiz' && item.entity_id === currentEntityId);
+            } else {
+                quizzes = allData.filter(item => item.type === 'quiz' && item.visibility === 'public');
+            }
+            
+            if (quizzes.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">لا توجد مسابقات متاحة</p>';
+                return;
+            }
+            
+            container.innerHTML = quizzes.map(quiz => {
+                const entity = allData.find(e => e.type === 'entity' && e.id === quiz.entity_id);
+                return `
+                    <div class="quiz-item">
+                        <h4>${quiz.quiz_title}</h4>
+                        <div class="quiz-item-meta">
+                            <span>النوع: ${quiz.quiz_type === 'quiz' ? 'اختبار' : 'مسابقة'}</span>
+                            ${entity ? `<span>الجهة: ${entity.entity_name}</span>` : ''}
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn" style="flex: 1;" onclick="startQuiz('${quiz.id}')">ابدأ الآن</button>
+                            <button class="btn btn-secondary" style="flex: 1; background: #ffc107; color: #333;" onclick="showQuizLeaderboard('${quiz.quiz_title}')">🏆 النتائج</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        let currentQuizData = null;
+        let currentQuestionIndex = 0;
+        let userAnswers = [];
+        let savedAnswers = [];
+        
+        function startQuiz(quizId) {
+            currentQuizId = quizId;
+            const quiz = allData.find(item => item.id === quizId);
+            if (!quiz) return;
+            
+            currentQuizData = quiz;
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            savedAnswers = [];
+            quizStartTime = null;
+            clearInterval(quizTimerInterval);
+            
+            showPage('takeQuizPage');
+            
+            setTimeout(() => {
+                const titleElement = document.getElementById('quizTitle');
+                const nameInput = document.getElementById('participantName');
+                const questionsContainer = document.getElementById('quizQuestionsContainer');
+                const startBtn = document.getElementById('startQuizBtn');
+                
+                if (titleElement) titleElement.textContent = quiz.quiz_title;
+                if (nameInput) nameInput.value = '';
+                if (questionsContainer) questionsContainer.innerHTML = '';
+                
+                if (startBtn) {
+                    startBtn.textContent = quiz.quiz_type === 'competition' ? 'ابدأ المسابقة' : 'ابدأ الاختبار';
+                }
+                
+                const formGroup = document.querySelector('#takeQuizPage .form-group');
+                if (formGroup) {
+                    formGroup.style.display = 'block';
+                }
+                
+                const existingNameCard = document.getElementById('participantNameCard');
+                if (existingNameCard) {
+                    existingNameCard.remove();
+                }
+            }, 10);
+        }
+
+        function startQuizQuestions() {
+            const participantName = document.getElementById('participantName').value.trim();
+            if (!participantName) {
+                showToast('يرجى إدخال اسمك أولاً', true);
+                return;
+            }
+            
+            quizStartTime = Date.now();
+            currentQuestionIndex = 0;
+            userAnswers = [];
+            const questions = JSON.parse(currentQuizData.questions);
+            savedAnswers = new Array(questions.length).fill(null);
+            
+            const formGroup = document.querySelector('#takeQuizPage .form-group');
+            formGroup.style.display = 'none';
+            
+            const nameCard = document.createElement('div');
+            nameCard.id = 'participantNameCard';
+            nameCard.innerHTML = `
+                <div style="text-align: center; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+                    <p style="margin: 0; font-size: 1.4em; font-weight: bold;">
+                        👤 المتسابق: ${participantName}
+                    </p>
+                </div>
+            `;
+            document.getElementById('quizQuestionsContainer').parentElement.insertBefore(nameCard, document.getElementById('quizQuestionsContainer'));
+            
+            displayCurrentQuestion();
+        }
+
+        // 🆕 دالة جديدة للتراجع عن اختيار العنصر
+        function unselectOrderItem(element) {
+            const poolContainer = document.getElementById('ordering_pool_container');
+            const answerContainer = document.getElementById('ordering_answer_container');
+            const itemText = element.dataset.item;
+            
+            if (!poolContainer || !answerContainer) return;
+            
+            // 1. إزالة العنصر من حاوية الإجابة
+            element.remove();
+            
+            // 2. إعادة إظهار العنصر في مجمع العناصر
+            const poolItem = poolContainer.querySelector(`.order-item-pool[data-item="${itemText}"]`);
+            if (poolItem) {
+                poolItem.style.display = 'block';
+            }
+
+            // 3. إعادة ترقيم العناصر المتبقية في حاوية الإجابة
+            Array.from(answerContainer.children).forEach((child, index) => {
+                child.querySelector('span').textContent = `${index + 1}.`;
+            });
+
+            // 4. تشغيل حفظ الإجابة مؤقتاً وتحديث الواجهة
+            if (currentQuizData && currentQuizData.quiz_type !== 'competition') {
+                saveCurrentAnswer();
+                displayCurrentQuestion(); // لإعادة رسم أزرار التنقل
+            }
+        }
+        
+        // 🆕 دالة جديدة لإدارة النقر والاختيار لسؤال الترتيب
+        function selectOrderItem(element) {
+            const answerContainer = document.getElementById('ordering_answer_container');
+            const itemText = element.dataset.item;
+            
+            const totalItems = JSON.parse(currentQuizData.questions)[currentQuestionIndex].correctOrder.length;
+
+            if (answerContainer.children.length >= totalItems) {
+                return; // منع إضافة المزيد إذا اكتمل الترتيب
+            }
+            
+            // إنشاء عنصر الإجابة المرتب
+            const orderedItem = document.createElement('div');
+            orderedItem.className = 'order-item-selected';
+            orderedItem.dataset.item = itemText;
+            
+            const orderNumber = answerContainer.children.length + 1;
+
+            orderedItem.innerHTML = `<span style="font-weight: bold; color: #667eea; margin-left: 10px;">${orderNumber}.</span> ${itemText}`;
+            orderedItem.style.cssText = 'padding: 10px; background: #d4edda; border-radius: 5px; border: 1px solid #28a745; display: flex; align-items: center; cursor: pointer;';
+            
+            // 🆕 إضافة معالج الحدث (Event Listener) الجديد
+            orderedItem.addEventListener('click', function() {
+                unselectOrderItem(this);
+            });
+
+            answerContainer.appendChild(orderedItem);
+            
+            // إخفاء العنصر الأصلي من المجمع
+            element.style.display = 'none';
+            
+            // تشغيل حفظ الإجابة مؤقتاً لتحديث حالة التنقل (في وضع Quiz)
+            if (currentQuizData && currentQuizData.quiz_type !== 'competition') {
+                saveCurrentAnswer();
+                displayCurrentQuestion(); // لإعادة رسم أزرار التنقل
+            }
+        }
+
+        
+        function displayCurrentQuestion() {
+            if (!currentQuizData) return;
+            
+            const questions = JSON.parse(currentQuizData.questions);
+            if (currentQuestionIndex >= questions.length) {
+                showQuizResults();
+                return;
+            }
+            
+            const q = questions[currentQuestionIndex];
+            const container = document.getElementById('quizQuestionsContainer');
+            const isCompetition = currentQuizData.quiz_type === 'competition';
+            
+            clearInterval(quizTimerInterval);
+            const timerDisplay = document.getElementById('activeTimer');
+            if (timerDisplay) timerDisplay.remove();
+
+            // زر عجلة الحظ (يظهر فقط في وضع المسابقة)
+            let wheelButtonHtml = '';
+            if (isCompetition) {
+                wheelButtonHtml = `
+                    <button class="btn btn-secondary" style="width: auto; padding: 10px 20px; background: #f5576c; margin-bottom: 15px;" onclick="showContestWheelModal()">
+                        🎡 اختر المتسابق عشوائياً
+                    </button>
+                `;
+            }
+
+            if (isCompetition && currentQuizData.time_limit > 0) {
+                 startQuestionTimer(currentQuizData.time_limit);
+            }
+            
+            let answersHtml = '';
+            
+            if (q.type === 'multiple' || q.type === 'truefalse') {
+                const options = q.type === 'truefalse' ? ['صح', 'خطأ'] : q.answers;
+                answersHtml = options.map((answer, ansIndex) => `
+                    <label class="answer-option" style="cursor: pointer;">
+                        <input type="radio" name="current_answer" value="${ansIndex}">
+                        ${answer}
+                    </label>
+                `).join('');
+            } else if (q.type === 'text') {
+                answersHtml = `
+                    <div class="form-group">
+                        <input type="text" id="text_answer" placeholder="اكتب إجابتك هنا" style="width: 100%;">
+                    </div>
+                `;
+            } else if (q.type === 'checkbox') {
+                answersHtml = q.answers.map((answer, ansIndex) => `
+                    <label class="answer-option" style="cursor: pointer;">
+                        <input type="checkbox" class="checkbox_answer" value="${ansIndex}">
+                        ${answer}
+                    </label>
+                `).join('');
+            } else if (q.type === 'matching') {
+                const uniqueRight = [...new Set(q.pairs.map(p => p.right))];
+                const shuffledRight = [...uniqueRight].sort(() => Math.random() - 0.5);
+                answersHtml = `
+                    <div style="display: grid; gap: 15px;">
+                        ${q.pairs.map((pair, i) => `
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span style="flex: 1; padding: 10px; background: #f8f9fa; border-radius: 5px;">${pair.left}</span>
+                                <span style="margin: 0 10px;">⟷</span>
+                                <select class="matching_answer" data-index="${i}" style="flex: 1; padding: 10px; border: 2px solid #e0e0e0; border-radius: 5px;">
+                                    <option value="">-- اختر --</option>
+                                    ${shuffledRight.map((right, j) => `<option value="${right}">${right}</option>`).join('')}
+                                </select>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (q.type === 'ordering') {
+                // 🆕 التعديل: طريقة الاختيار بالتسلسل (Click-to-Order)
+                const shuffledItems = [...q.correctOrder].sort(() => Math.random() - 0.5);
+                
+                const shuffledHtml = shuffledItems.map((item, i) => `
+                    <div class="order-item-pool" data-item="${item}" onclick="selectOrderItem(this)" 
+                         style="padding: 15px; background: #e3f2fd; border-radius: 5px; cursor: pointer; border: 1px solid #90caf9; margin-bottom: 10px; transition: all 0.2s; font-weight: bold;">
+                        ${item}
+                    </div>
+                `).join('');
+
+                answersHtml = `
+                    <p style="margin-bottom: 10px; font-weight: bold; color: #333;">انقر على العناصر بالترتيب الصحيح:</p>
+                    
+                    <div id="ordering_pool_container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; padding: 15px; background: #f0f0f0; border-radius: 10px; margin-bottom: 20px;">
+                        ${shuffledHtml}
+                    </div>
+
+                    <p style="margin-bottom: 10px; font-weight: bold; color: #667eea;">الإجابة المرتبة (انقر على الإجابة للتراجع):</p>
+                    <div id="ordering_answer_container" style="display: flex; flex-direction: column; gap: 8px; padding: 15px; background: white; border: 2px dashed #667eea; border-radius: 10px; min-height: 100px;">
+                        </div>
+                `;
+            }
+            
+            const navigationHtml = isCompetition ? '' : `
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                    ${questions.map((_, i) => `
+                        <button onclick="navigateToQuestion(${i})" 
+                                style="width: 45px; height: 45px; border-radius: 8px; border: 2px solid ${i === currentQuestionIndex ? '#667eea' : '#e0e0e0'}; 
+                                background: ${savedAnswers[i] !== null ? '#d4edda' : (i === currentQuestionIndex ? '#667eea' : 'white')}; 
+                                color: ${i === currentQuestionIndex ? 'white' : '#333'}; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                            ${i + 1}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = `
+                ${navigationHtml}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <div style="padding: 15px; background: #f0f0f0; border-radius: 10px; text-align: center; flex: 1;">
+                        <strong>السؤال ${currentQuestionIndex + 1} من ${questions.length}</strong>
+                    </div>
+                    ${wheelButtonHtml}
+                </div>
+                <div class="question-item">
+                    <h4>${q.question}</h4>
+                    ${answersHtml}
+                    <div id="feedback_area" style="margin-top: 15px;"></div>
+                    <button class="btn btn-success" style="margin-top: 20px;" onclick="${isCompetition ? 'submitCompetitionAnswer()' : 'submitQuizAnswer()'}">
+                        ${isCompetition ? (currentQuestionIndex < questions.length - 1 ? 'تسليم وإكمال المسابقة' : 'تسليم النتيجة النهائية') : (currentQuestionIndex < questions.length - 1 ? 'حفظ والسؤال التالي' : 'حفظ وإنهاء الاختبار')}
+                    </button>
+                </div>
+            `;
+            
+            
+            restoreSavedAnswer();
+        }
+        
+        function startQuestionTimer(seconds) {
+            clearInterval(quizTimerInterval); 
+            
+            const qItem = document.querySelector('.question-item');
+            if (!qItem) return;
+
+            let timeLeft = parseInt(seconds);
+            
+            const timerHTML = `
+                <div id="activeTimer" style="margin-bottom: 15px; padding: 10px; background: #fefefe; border-radius: 8px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; align-items:center;">
+                        <span style="font-weight:bold; color:#333;">⏱️ الوقت المتبقي:</span> 
+                        <span id="timeCount" style="font-weight:bold; font-size:1.2em; color:#dc3545;">${timeLeft}</span> ثانية
+                    </div>
+                    <div style="width: 100%; background-color: #e0e0e0; border-radius: 5px; height: 10px;">
+                        <div id="progressBar" style="width: 100%; height: 100%; background-color: #28a745; border-radius: 5px; transition: width 1s linear;"></div>
+                    </div>
+                </div>
+            `;
+            
+            const timerDiv = document.createElement('div');
+            timerDiv.innerHTML = timerHTML;
+            qItem.insertBefore(timerDiv.firstChild, qItem.firstChild);
+
+            quizTimerInterval = setInterval(() => {
+                timeLeft--;
+                const timeCountEl = document.getElementById('timeCount');
+                if(timeCountEl) timeCountEl.innerText = timeLeft;
+                
+                const percentage = (timeLeft / seconds) * 100;
+                const bar = document.getElementById('progressBar');
+                if(bar) {
+                    bar.style.width = percentage + "%";
+                    if(percentage < 30) bar.style.backgroundColor = "#dc3545"; 
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(quizTimerInterval);
+                    showToast('انتهى الوقت! تم تسجيل إجابة فارغة.', true);
+                    forceSubmitTimeout(); 
+                }
+            }, 1000);
+        }
+        
+        function forceSubmitTimeout() {
+            savedAnswers[currentQuestionIndex] = null;
+            userAnswers.push({
+                question: JSON.parse(currentQuizData.questions)[currentQuestionIndex].question,
+                type: JSON.parse(currentQuizData.questions)[currentQuestionIndex].type,
+                userAnswer: null, 
+                isCorrect: false,
+                partialScore: 0
+            });
+            
+            currentQuestionIndex++;
+            displayCurrentQuestion();
+        }
+
+
+        function restoreSavedAnswer() {
+            const questions = JSON.parse(currentQuizData.questions);
+            const q = questions[currentQuestionIndex];
+            const savedAnswer = savedAnswers[currentQuestionIndex];
+            
+            if (savedAnswer === null) return;
+            
+            if (q.type === 'multiple' || q.type === 'truefalse') {
+                const radio = document.querySelector(`input[name="current_answer"][value="${savedAnswer}"]`);
+                if (radio) radio.checked = true;
+            } else if (q.type === 'text') {
+                const textInput = document.getElementById('text_answer');
+                if (textInput) textInput.value = savedAnswer;
+            } else if (q.type === 'checkbox') {
+                savedAnswer.forEach(val => {
+                    const checkbox = document.querySelector(`.checkbox_answer[value="${val}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            } else if (q.type === 'matching') {
+                const selects = document.querySelectorAll('.matching_answer');
+                savedAnswer.forEach((val, i) => {
+                    if (selects[i]) selects[i].value = val;
+                });
+            } else if (q.type === 'ordering') {
+                // 🆕 التعديل: استعادة الإجابة في طريقة Click-to-Order
+                const answerContainer = document.getElementById('ordering_answer_container');
+                const poolContainer = document.getElementById('ordering_pool_container');
+                
+                if (savedAnswer && savedAnswer.length > 0 && answerContainer && poolContainer) {
+                    answerContainer.innerHTML = '';
+                    
+                    savedAnswer.forEach((item, index) => {
+                        // 1. إضافة العنصر إلى حاوية الإجابة
+                        const orderedItem = document.createElement('div');
+                        orderedItem.className = 'order-item-selected';
+                        orderedItem.dataset.item = item;
+                        const orderNumber = index + 1;
+                        orderedItem.innerHTML = `<span style="font-weight: bold; color: #667eea; margin-left: 10px;">${orderNumber}.</span> ${item}`;
+                        orderedItem.style.cssText = 'padding: 10px; background: #d4edda; border-radius: 5px; border: 1px solid #28a745; display: flex; align-items: center; cursor: pointer;';
+                        
+                        // 🆕 إعادة إضافة معالج الحدث
+                        orderedItem.addEventListener('click', function() {
+                            unselectOrderItem(this);
+                        });
+                        answerContainer.appendChild(orderedItem);
+                        
+                        // 2. إخفاء العنصر من مجمع العناصر
+                        const poolItem = poolContainer.querySelector(`.order-item-pool[data-item="${item}"]`);
+                        if (poolItem) {
+                            poolItem.style.display = 'none';
+                        }
+                    });
+                }
+            }
+        }
+        
+        function navigateToQuestion(index) {
+            saveCurrentAnswer();
+            currentQuestionIndex = index;
+            displayCurrentQuestion();
+        }
+        
+        function saveCurrentAnswer() {
+            const questions = JSON.parse(currentQuizData.questions);
+            const q = questions[currentQuestionIndex];
+            
+            let answer = null;
+            
+            if (q.type === 'multiple' || q.type === 'truefalse') {
+                const selected = document.querySelector('input[name="current_answer"]:checked');
+                if (selected) {
+                    answer = q.type === 'truefalse' ? (selected.value === '0') : parseInt(selected.value);
+                }
+            } else if (q.type === 'text') {
+                const textInput = document.getElementById('text_answer');
+                if (textInput && textInput.value.trim()) {
+                    answer = textInput.value.trim();
+                }
+            } else if (q.type === 'checkbox') {
+                const checked = document.querySelectorAll('.checkbox_answer:checked');
+                if (checked.length > 0) {
+                    answer = Array.from(checked).map(c => parseInt(c.value));
+                }
+            } else if (q.type === 'matching') {
+                const selects = document.querySelectorAll('.matching_answer');
+                const allAnswers = Array.from(selects).map(s => s.value);
+                if (allAnswers.every(a => a !== '')) {
+                    answer = allAnswers;
+                }
+            } else if (q.type === 'ordering') {
+                // 🆕 التعديل: قراءة الإجابة من حاوية Click-to-Order
+                const orderedItems = document.querySelectorAll('#ordering_answer_container .order-item-selected');
+                
+                if (orderedItems.length > 0) {
+                    answer = Array.from(orderedItems).map(item => item.dataset.item);
+                }
+            }
+            
+            savedAnswers[currentQuestionIndex] = answer;
+        }
+        
+        function setupDragAndDrop() {
+            // لم يعد يستخدم في سؤال الترتيب
+        }
+        
+        function submitQuizAnswer() {
+            saveCurrentAnswer();
+            
+            const savedAnswer = savedAnswers[currentQuestionIndex];
+            const questions = JSON.parse(currentQuizData.questions);
+            const q = questions[currentQuestionIndex];
+
+            // تحقق إضافي لسؤال الترتيب في وضع الاختبار
+            if (q.type === 'ordering') {
+                if (!savedAnswer || savedAnswer.length !== q.correctOrder.length) {
+                     showToast('يرجى اختيار جميع العناصر بالترتيب.', true);
+                     return;
+                }
+            } else if (savedAnswer === null) {
+                showToast('يرجى الإجابة على السؤال', true);
+                return;
+            }
+            
+            
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                displayCurrentQuestion();
+            } else {
+                for (let i = 0; i < questions.length; i++) {
+                    const qCheck = questions[i];
+                    if (savedAnswers[i] === null || (qCheck.type === 'ordering' && savedAnswers[i].length !== qCheck.correctOrder.length)) {
+                        showToast(`يرجى إكمال الإجابة على السؤال ${i + 1}`, true);
+                        currentQuestionIndex = i;
+                        displayCurrentQuestion();
+                        return;
+                    }
+                }
+                
+                userAnswers = questions.map((q, i) => ({
+                    question: q.question,
+                    type: q.type,
+                    userAnswer: savedAnswers[i],
+                    correctAnswer: q.correct || q.correctOrder || q.pairs,
+                    isCorrect: null, 
+                    partialScore: null
+                }));
+                
+                showQuizResults();
+            }
+        }
+        
+        function submitCompetitionAnswer() {
+            clearInterval(quizTimerInterval);
+            
+            const questions = JSON.parse(currentQuizData.questions);
+            const q = questions[currentQuestionIndex];
+            
+            let userAnswer = null;
+            let isCorrect = false;
+            let partialScore = 0;
+            
+            if (q.type === 'multiple' || q.type === 'truefalse') {
+                const selected = document.querySelector('input[name="current_answer"]:checked');
+                if (!selected) { showToast('يرجى اختيار إجابة', true); return; }
+                userAnswer = q.type === 'truefalse' ? (selected.value === '0') : parseInt(selected.value);
+                isCorrect = userAnswer === q.correct || (q.type === 'truefalse' && userAnswer === q.correct);
+                partialScore = isCorrect ? 1 : 0;
+                
+                if (isCorrect) {
+                    const celebrations = [{ emoji: '🎉', message: 'ممتاز! إجابة صحيحة!' }, { emoji: '🌟', message: 'رائع جداً! أحسنت!' }, { emoji: '🏆', message: 'مذهل! إجابة مثالية!' }];
+                    showCelebration('success', celebrations[Math.floor(Math.random() * celebrations.length)].message, celebrations[Math.floor(Math.random() * celebrations.length)].emoji);
+                } else { showCelebration('wrong', 'إجابة خاطئة. راجع الإجابة الصحيحة أدناه.', '❌'); }
+                
+            } else if (q.type === 'text') {
+                userAnswer = document.getElementById('text_answer').value.trim();
+                if (!userAnswer) { showToast('يرجى كتابة إجابة', true); return; }
+                const normalizedUserAnswer = normalizeArabicText(userAnswer);
+                const normalizedCorrectAnswer = normalizeArabicText(q.correct);
+                isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
+                const similarity = calculateSimilarity(normalizedUserAnswer, normalizedCorrectAnswer);
+                
+                if (isCorrect) {
+                    partialScore = 1;
+                    const celebrations = [{ emoji: '🎉', message: 'ممتاز! إجابة صحيحة!' }, { emoji: '🌟', message: 'رائع جداً! أحسنت!' }, { emoji: '🏆', message: 'مذهل! إجابة مثالية!' }];
+                    showCelebration('success', celebrations[Math.floor(Math.random() * celebrations.length)].message, celebrations[Math.floor(Math.random() * celebrations.length)].emoji);
+                } else if (similarity > 0.7) {
+                    partialScore = 0.5; showCelebration('close', 'لقد اقتربت من الإجابة الصحيحة!', '😊');
+                } else { partialScore = 0; showCelebration('wrong', 'حاول مرة أخرى. راجع الإجابة الصحيحة أدناه.', '💪'); }
+                
+            } else if (q.type === 'checkbox') {
+                const checked = document.querySelectorAll('.checkbox_answer:checked');
+                if (checked.length === 0) { showToast('يرجى اختيار إجابة واحدة على الأقل', true); return; }
+                userAnswer = Array.from(checked).map(c => parseInt(c.value)).sort();
+                const correctAnswers = q.correct.sort();
+                const totalCorrect = correctAnswers.length;
+                const correctSelected = userAnswer.filter(ans => correctAnswers.includes(ans)).length;
+                const wrongSelected = userAnswer.filter(ans => !correctAnswers.includes(ans)).length;
+                
+                if (correctSelected === wrongSelected && userAnswer.length === totalCorrect) { partialScore = 0; } 
+                else { partialScore = Math.max(0, (correctSelected - wrongSelected) / totalCorrect); }
+                isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswers);
+                
+                if (isCorrect) {
+                    const celebrations = [{ emoji: '🎉', message: 'ممتاز! إجابة صحيحة!' }, { emoji: '✨', message: 'عظيم! واصل التميز!' },];
+                    showCelebration('success', celebrations[Math.floor(Math.random() * celebrations.length)].message, celebrations[Math.floor(Math.random() * celebrations.length)].emoji);
+                } else if (partialScore > 0.5) { showCelebration('close', 'إجابة جيدة! قريبة من الصحيحة.', '👍'); } 
+                else { showCelebration('wrong', 'حاول مرة أخرى. راجع الإجابة الصحيحة أدناه.', '💪'); }
+                
+            } else if (q.type === 'matching') {
+                const selects = document.querySelectorAll('.matching_answer');
+                userAnswer = [];
+                for (let select of selects) { if (!select.value) { showToast('يرجى إكمال جميع المطابقات', true); return; } userAnswer.push(select.value); }
+                const correctMatches = userAnswer.filter((ans, i) => ans === q.pairs[i].right).length;
+                partialScore = correctMatches / q.pairs.length;
+                isCorrect = userAnswer.every((ans, i) => ans === q.pairs[i].right);
+                
+                if (isCorrect) { showCelebration('success', 'عمل رائع في المطابقة!', '🥳'); } 
+                else if (partialScore > 0.5) { showCelebration('close', 'أحسنت! جزء كبير من الإجابة صحيح.', '🙂'); } 
+                else { showCelebration('wrong', 'حاول مرة أخرى. راجع الإجابة الصحيحة أدناه.', '💪'); }
+                
+            } else if (q.type === 'ordering') {
+                // 🆕 التعديل: حساب النقاط لسؤال الترتيب (Click-to-Order)
+                const orderedItems = document.querySelectorAll('#ordering_answer_container .order-item-selected');
+                const totalItems = q.correctOrder.length;
+                
+                if (orderedItems.length !== totalItems) {
+                    showToast('يرجى اختيار جميع العناصر بالترتيب.', true);
+                    return;
+                }
+                
+                userAnswer = Array.from(orderedItems).map(item => item.dataset.item);
+                
+                let correctPositions = 0;
+                userAnswer.forEach((item, i) => { 
+                    if (item === q.correctOrder[i]) correctPositions++; 
+                });
+                
+                partialScore = correctPositions / totalItems;
+                isCorrect = JSON.stringify(userAnswer) === JSON.stringify(q.correctOrder);
+                
+                if (isCorrect) { showCelebration('success', 'الترتيب مثالي!', '👏'); } 
+                else if (partialScore > 0.5) { showCelebration('close', 'اقتربت من الترتيب الصحيح.', '🤔'); } 
+                else { showCelebration('wrong', 'حاول مرة أخرى. راجع الإجابة الصحيحة أدناه.', '💪'); }
+            }
+            
+            const feedbackArea = document.getElementById('feedback_area');
+            let correctAnswerText = '';
+            if (q.type === 'multiple') { correctAnswerText = `الإجابة النموذجية: ${q.answers[q.correct]}`; } 
+            else if (q.type === 'truefalse') { correctAnswerText = `الإجابة النموذجية: ${q.correct ? 'صح' : 'خطأ'}`; } 
+            else if (q.type === 'text') { correctAnswerText = `الإجابة النموذجية: ${q.correct}`; } 
+            else if (q.type === 'checkbox') { correctAnswerText = `الإجابات النموذجية: ${q.correct.map(i => q.answers[i]).join(' ، ')}`; } 
+            else if (q.type === 'matching') { correctAnswerText = 'المطابقات النموذجية: ' + q.pairs.map(p => `${p.left} ⟷ ${p.right}`).join(' | '); } 
+            else if (q.type === 'ordering') { correctAnswerText = `الترتيب النموذجي: ${q.correctOrder.join(' ← ')}`; }
+
+            if (isCorrect) {
+                feedbackArea.innerHTML = '<div style="padding: 15px; background: #d4edda; color: #155724; border-radius: 8px; font-weight: bold;">✓ إجابة صحيحة!</div>';
+            } else if (partialScore > 0) {
+                feedbackArea.innerHTML = `<div style="padding: 15px; background: #fff3cd; color: #856404; border-radius: 8px;">◐ إجابة جزئية صحيحة (${(partialScore * 100).toFixed(0)}%)<br><strong>${correctAnswerText}</strong></div>`;
+            } else {
+                feedbackArea.innerHTML = `<div style="padding: 15px; background: #f8d7da; color: #721c24; border-radius: 8px;">✗ إجابة خاطئة<br><strong>${correctAnswerText}</strong></div>`;
+            }
+            
+            userAnswers.push({
+                question: q.question, type: q.type, userAnswer: userAnswer,
+                correctAnswer: q.correct || q.correctOrder || q.pairs,
+                isCorrect: isCorrect, partialScore: partialScore
+            });
+            
+            document.querySelectorAll('input, select').forEach(el => { el.disabled = true; });
+            
+            const btn = document.querySelector('.question-item button');
+            btn.disabled = false;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn');
+            btn.textContent = currentQuestionIndex < questions.length - 1 ? 'الانتقال للسؤال التالي' : 'عرض النتيجة النهائية';
+            btn.onclick = () => { currentQuestionIndex++; displayCurrentQuestion(); };
+        }
+        
+        async function showQuizResults() {
+            clearInterval(quizTimerInterval);
+
+            if (allData.length >= 999) { showToast('تم الوصول للحد الأقصى من السجلات (999)', true); return; }
+
+            const participantName = document.getElementById('participantName').value;
+            const questions = JSON.parse(currentQuizData.questions);
+            const isCompetition = currentQuizData.quiz_type === 'competition';
+            
+            let score = 0;
+            
+            if (isCompetition) {
+                score = userAnswers.reduce((sum, a) => sum + (a.partialScore || 0), 0);
+            } else {
+                userAnswers.forEach((answer, index) => {
+                    const q = questions[index];
+                    let questionScore = 0;
+                    
+                    if (q.type === 'multiple' || q.type === 'truefalse') {
+                        if (answer.userAnswer === q.correct) questionScore = 1;
+                    } else if (q.type === 'text') {
+                        const normalizedUserAnswer = normalizeArabicText(answer.userAnswer);
+                        const normalizedCorrectAnswer = normalizeArabicText(q.correct);
+                        if (normalizedUserAnswer === normalizedCorrectAnswer) questionScore = 1;
+                    } else if (q.type === 'checkbox') {
+                        const correctAnswers = q.correct;
+                        const userAnswersArr = answer.userAnswer || [];
+                        const totalCorrect = correctAnswers.length;
+                        const correctSelected = userAnswersArr.filter(ans => correctAnswers.includes(ans)).length;
+                        const wrongSelected = userAnswersArr.filter(ans => !correctAnswers.includes(ans)).length;
+                        
+                        if (correctSelected === wrongSelected && userAnswersArr.length === totalCorrect) { questionScore = 0; } 
+                        else { questionScore = Math.max(0, (correctSelected - wrongSelected) / totalCorrect); }
+                    } else if (q.type === 'matching') {
+                        const correctMatches = answer.userAnswer.filter((ans, i) => ans === q.pairs[i].right).length;
+                        questionScore = correctMatches / q.pairs.length;
+                    } else if (q.type === 'ordering') {
+                        // 🆕 التعديل: حساب النقاط لسؤال الترتيب في وضع الاختبار (Quiz)
+                        let correctPositions = 0;
+                        if (answer.userAnswer && q.correctOrder) {
+                            answer.userAnswer.forEach((item, i) => { if (item === q.correctOrder[i]) correctPositions++; });
+                        }
+                        questionScore = correctPositions / q.correctOrder.length;
+                    }
+                    score += questionScore;
+                    answer.isCorrect = questionScore >= 0.99;
+                    answer.partialScore = questionScore;
+                });
+            }
+            
+            const timeTaken = Math.floor((Date.now() - quizStartTime) / 1000);
+            
+            const result = await window.dataSdk.create({
+                id: 'result_' + Date.now(), type: 'result', entity_id: currentQuizData.entity_id,
+                quiz_title: currentQuizData.quiz_title, participant_name: participantName,
+                score: score, time_taken: timeTaken, completed_at: Date.now(),
+                user_answers: JSON.stringify(userAnswers)
+            });
+            
+            if (result.isOk) { displayResultsSummary(score, questions.length); } 
+            else { showToast('فشل حفظ النتيجة', true); }
+        }
+        
+        function displayResultsSummary(score, total) {
+            const questions = JSON.parse(currentQuizData.questions);
+            const container = document.getElementById('quizQuestionsContainer');
+            const isCompetition = currentQuizData.quiz_type === 'competition';
+            
+            const percentage = (score / total) * 100;
+            const hasCert = currentQuizData.enable_cert || false;
+            
+            let certButtonHtml = '';
+            if (hasCert && percentage >= 50) {
+                certButtonHtml = `
+                    <button class="btn btn-success" style="margin-top: 20px; padding: 15px 40px; background: #ffd700; color: #333; font-size: 1.1em; font-weight: bold;" 
+                    onclick="generateCertificatePDF('${document.getElementById('participantName').value}', '${currentQuizData.quiz_title}', '${score.toFixed(2)}/${total}')">
+                    🎓 تحميل شهادة الإتمام
+                    </button>
+                `;
+            }
+            
+            let summaryHtml = `
+                <div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; margin-bottom: 30px;">
+                    <h2 style="margin: 0 0 10px 0; font-size: 2.5em;">🎉 ${isCompetition ? 'انتهت المسابقة' : 'انتهى الاختبار'}!</h2>
+                    <p style="font-size: 2em; margin: 0; font-weight: bold;">النتيجة: ${score.toFixed(2)} من ${total}</p>
+                    <p style="font-size: 1.2em; margin: 10px 0 0 0;">${isCompetition ? 'نسبة التحصيل' : 'نسبة النجاح'}: ${Math.round(percentage)}%</p>
+                    ${certButtonHtml}
+                </div>
+                
+                <h3 style="margin-bottom: 20px;">ملخص الإجابات التفصيلي:</h3>
+            `;
+            
+            userAnswers.forEach((answer, index) => {
+                const q = questions[index];
+                const isCorrect = answer.isCorrect || false;
+                const partialScore = answer.partialScore || 0;
+                let correctAnswerText = '';
+                let userAnswerText = answer.userAnswer !== null && answer.userAnswer !== undefined ? (answer.userAnswer.join ? answer.userAnswer.join(' ، ') : answer.userAnswer) : '<span style="color: #999;">لم يجب/أجابة فارغة</span>';
+                
+                if (q.type === 'multiple') {
+                    userAnswerText = answer.userAnswer !== null && answer.userAnswer !== undefined ? q.answers[answer.userAnswer] : userAnswerText;
+                    correctAnswerText = q.answers[q.correct];
+                } else if (q.type === 'truefalse') {
+                    userAnswerText = answer.userAnswer !== null && answer.userAnswer !== undefined ? (answer.userAnswer ? 'صح' : 'خطأ') : userAnswerText;
+                    correctAnswerText = q.correct ? 'صح' : 'خطأ';
+                } else if (q.type === 'text') { correctAnswerText = q.correct; } 
+                else if (q.type === 'checkbox') {
+                    userAnswerText = answer.userAnswer && answer.userAnswer.length > 0 ? answer.userAnswer.map(i => q.answers[i]).join(' ، ') : userAnswerText;
+                    correctAnswerText = q.correct.map(i => q.answers[i]).join(' ، ');
+                } else if (q.type === 'matching') {
+                    userAnswerText = answer.userAnswer && answer.userAnswer.length > 0 ? q.pairs.map((p, i) => `${p.left} ⟷ ${answer.userAnswer[i]}`).join(' | ') : userAnswerText;
+                    correctAnswerText = q.pairs.map(p => `${p.left} ⟷ ${p.right}`).join(' | ');
+                } else if (q.type === 'ordering') {
+                    userAnswerText = answer.userAnswer && answer.userAnswer.length > 0 ? answer.userAnswer.join(' ← ') : userAnswerText;
+                    correctAnswerText = q.correctOrder.join(' ← ');
+                }
+                
+                const bgColor = isCorrect ? '#d4edda' : (partialScore > 0 ? '#fff3cd' : '#f8d7da');
+                const borderColor = isCorrect ? '#28a745' : (partialScore > 0 ? '#ffc107' : '#dc3545');
+                const icon = isCorrect ? '✓' : (partialScore > 0 ? '◐' : '✗');
+                
+                summaryHtml += `
+                    <div style="padding: 20px; background: ${bgColor}; border-radius: 10px; margin-bottom: 15px; border-right: 5px solid ${borderColor};">
+                        <h4 style="margin: 0 0 10px 0;">${icon} السؤال ${index + 1}: ${q.question}</h4>
+                        <p style="margin: 5px 0;"><strong>إجابتك:</strong> ${userAnswerText}</p>
+                        <p style="margin: 5px 0; color: #666;"><strong>النقاط:</strong> ${partialScore.toFixed(2)}/1</p>
+                        ${!isCorrect ? `<p style="margin: 5px 0; color: #155724;"><strong>الإجابة النموذجية:</strong> ${correctAnswerText}</p>` : ''}
+                    </div>
+                `;
+            });
+            
+            summaryHtml += `<button class="btn" style="margin-top: 20px;" onclick="goBackToQuizzes()">العودة للمسابقات</button>`;
+            container.innerHTML = summaryHtml;
+        }
+        
+        function generateCertificatePDF(studentName, courseName, score) {
+            const { jsPDF } = window.jspdf;
+            
+            // محاولة العثور على إعدادات الشهادة المخصصة
+            let quiz = allData.find(q => q.quiz_title === courseName && q.entity_id === currentEntityId);
+            if (!quiz) {
+                 quiz = currentQuizData || {}; // نستخدم البيانات الحالية إذا لم نعثر على سجل كامل
+            }
+
+            const certTitle = quiz.cert_title || 'شهادة إتمام';
+            const certBody = quiz.cert_body || 'تشهد إدارة الموقع بأن';
+            const certBg = quiz.cert_bg; // Base64 image
+            
+            const passingScore = score.split('/')[1] * 0.5;
+            
+            const certDiv = document.createElement('div');
+            certDiv.id = 'cert-container';
+            
+            // تنسيق الخلفية
+            let bgStyle = 'background: white;';
+            if (certBg) {
+                bgStyle = `background: url('${certBg}') no-repeat center center; background-size: cover;`;
+            }
+
+            certDiv.style.cssText = `
+                position: fixed; top: -9999px; left: 0; width: 800px; height: 600px; 
+                padding: 50px; text-align: center; border: 10px solid #667eea; 
+                ${bgStyle}
+                font-family: 'Arial', sans-serif; z-index: 9999;
+                display: flex; flex-direction: column; justify-content: center; align-items: center;
+                direction: rtl; 
+            `;
+            
+            const date = new Date().toLocaleDateString('ar-SA');
+            
+            // تحسين ظهور النص في حال وجود خلفية (إضافة ظل للنص)
+            const textShadow = certBg ? 'text-shadow: 2px 2px 4px rgba(255,255,255,0.8);' : '';
+            
+            certDiv.innerHTML = `
+                <h1 style="color: #667eea; font-size: 50px; margin-bottom: 20px; ${textShadow}">${certTitle}</h1>
+                <p style="font-size: 24px; color: #333; font-weight:bold; ${textShadow}">${certBody}</p>
+                <h2 style="font-size: 40px; color: #000; margin: 10px 0; padding: 5px 20px; border-bottom: 2px dashed #764ba2; ${textShadow}">${studentName}</h2>
+                <p style="font-size: 24px; color: #333; font-weight:bold; ${textShadow}">قد اجتاز بنجاح المسابقة بعنوان</p>
+                <h3 style="font-size: 30px; color: #764ba2; ${textShadow}">"${courseName}"</h3>
+                <p style="font-size: 20px; margin-top: 20px; color: #333; font-weight:bold; ${textShadow}">الدرجة النهائية: ${score}</p>
+                <p style="font-size: 18px; margin-top: 40px; color: #333; font-weight:bold; ${textShadow}">تاريخ المنح: ${date}</p>
+            `;
+            
+            document.body.appendChild(certDiv);
+
+            html2canvas(certDiv, { scale: 2, useCORS: true }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('l', 'px', [800, 600]);
+                pdf.addImage(imgData, 'PNG', 0, 0, 800, 600);
+                pdf.save(`شهادة_${studentName}.pdf`);
+                document.body.removeChild(certDiv);
+                showToast('تم تحميل الشهادة بنجاح!');
+            });
+        }
+        
+        function importRandomQuestions() {
+            const count = parseInt(document.getElementById('importCount').value);
+            if (!count || count <= 0) { showToast('حدد عدداً صحيحاً للأسئلة', true); return; }
+
+            let allPoolQuestions = [];
+            const myQuizzes = allData.filter(item => item.type === 'quiz' && item.entity_id === currentEntityId);
+
+            myQuizzes.forEach(quiz => {
+                try {
+                    const qList = JSON.parse(quiz.questions);
+                    allPoolQuestions = allPoolQuestions.concat(qList);
+                } catch (e) { console.error(e); }
+            });
+
+            if (allPoolQuestions.length === 0) { showToast('لا توجد مسابقات سابقة لاستيراد الأسئلة منها', true); return; }
+
+            allPoolQuestions.sort(() => Math.random() - 0.5);
+            const selectedQuestions = allPoolQuestions.slice(0, count);
+            if (selectedQuestions.length < count) { showToast(`تم استيراد ${selectedQuestions.length} سؤال فقط. لا يوجد المزيد.`, true); }
+
+            selectedQuestions.forEach(q => {
+                addQuestionForm();
+                const lastQIndex = questionCounter;
+                document.getElementById(`qtype_${lastQIndex}`).value = q.type;
+                document.getElementById(`qtext_${lastQIndex}`).value = q.question;
+                
+                updateQuestionType(`question_${lastQIndex}`);
+                updateQuestionTypeWithData(`question_${lastQIndex}`, q);
+            });
+
+            showToast(`تم استيراد ${selectedQuestions.length} سؤال بنجاح`);
+        }
+
+
+        function goBackToQuizzes() {
+            if (currentEntityId) { showQuizzesSection(); } else { showPublicQuizzes(); }
+        }
+
+        // 🟢 دالة عرض لوحة الصدارة لمسابقة محددة فقط
+        function showQuizLeaderboard(quizTitle) {
+            const results = allData.filter(item => 
+                item.type === 'result' && 
+                (currentEntityId ? item.entity_id === currentEntityId : true) && 
+                item.quiz_title === quizTitle
+            );
+
+            document.getElementById('leaderboardBackBtn').onclick = currentEntityId ? showQuizzesSection : goToHome;
+            document.getElementById('leaderboardSubtitle').textContent = `نتائج مسابقة: ${quizTitle}`;
+            
+            renderSpecificLeaderboard(results);
+            showPage('leaderboardPage');
+        }
+
+        // دالة عرض جدول الصدارة (تستخدم الآن للعرض العام والمخصص)
+        function renderSpecificLeaderboard(results) {
+            const tbody = document.getElementById('leaderboardBody');
+            results.sort((a, b) => b.score - a.score || a.time_taken - b.time_taken);
+            
+            if (results.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">لا توجد نتائج لهذه المسابقة بعد</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = results.map((result, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${result.participant_name}</td>
+                    <td>${result.quiz_title}</td>
+                    <td>${result.score.toFixed(2)}</td>
+                    <td>${result.time_taken}</td>
+                </tr>
+            `).join('');
+        }
+
+        // تم إزالة showPublicLeaderboard
+        
+        function showWheelOfFortune() { showPage('wheelPage'); parseNames(); }
+
+        let names = [];
+        let isSpinning = false;
+        let currentRotation = 0;
+        let currentWinner = null;
+        let canvas = null;
+        let ctx = null;
+        const wheelColors = ['#81c784', '#64b5f6', '#ffb74d', '#e57373', '#ba68c8', '#4db6ac', '#ff8a65', '#9575cd'];
+        
+        // ---- دوال عجلة الحظ العامة ----
+        function initWheel() {
+            canvas = document.getElementById('wheelCanvas');
+            if (canvas) {
+                ctx = canvas.getContext('2d');
+                const namesTextarea = document.getElementById('namesTextarea');
+                const spinButton = document.getElementById('spinButton');
+                const closeModal = document.getElementById('closeModal');
+                const deleteWinnerBtn = document.getElementById('deleteWinner');
+                
+                if (namesTextarea) namesTextarea.addEventListener('input', parseNames);
+                if (spinButton) spinButton.addEventListener('click', spinWheel);
+                
+                if (closeModal) closeModal.onclick = () => { document.getElementById('winnerModal').classList.remove('show'); };
+                if (deleteWinnerBtn) deleteWinnerBtn.onclick = () => {
+                    if (currentWinner) {
+                        const textarea = document.getElementById('namesTextarea');
+                        const currentNames = textarea.value.split('\n').filter(n => n.trim());
+                        const indexToRemove = currentNames.findIndex(n => n.trim() === currentWinner.trim());
+                        if (indexToRemove !== -1) { currentNames.splice(indexToRemove, 1); }
+                        textarea.value = currentNames.join('\n');
+                        parseNames();
+                        currentWinner = null;
+                        showToast('تم حذف الفائز من القائمة.');
+                    }
+                    document.getElementById('winnerModal').classList.remove('show');
+                };
+
+                parseNames(); 
+            }
+        }
+        
+        function parseNames() {
+            const textarea = document.getElementById('namesTextarea');
+            if (!textarea) return;
+            const text = textarea.value.trim();
+            if (!text) {
+                names = [];
+            } else {
+                names = text.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+            }
+            drawWheel();
+            updateSpinButton();
+        }
+
+        function drawWheel() {
+            if (!ctx || !canvas) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (names.length === 0) {
+                ctx.fillStyle = '#f0f0f0'; ctx.beginPath(); ctx.arc(200, 200, 192, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#999'; ctx.font = '18px Arial'; ctx.textAlign = 'center'; ctx.fillText('أدخل أسماء للبدء', 200, 200);
+                return;
+            }
+
+            const anglePerSegment = (Math.PI * 2) / names.length;
+            const startOffset = -Math.PI / 2;
+            
+            names.forEach((name, index) => {
+                const startAngle = startOffset + (anglePerSegment * index);
+                const endAngle = startAngle + anglePerSegment;
+                
+                ctx.fillStyle = wheelColors[index % wheelColors.length];
+                ctx.beginPath(); ctx.arc(200, 200, 192, startAngle, endAngle); ctx.lineTo(200, 200); ctx.fill();
+                
+                ctx.save();
+                ctx.translate(200, 200);
+                ctx.rotate(startAngle + anglePerSegment / 2);
+                ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; ctx.font = 'bold 18px Arial';
+                ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 3;
+                ctx.fillText(name.length > 12 ? name.substring(0, 12) + '...' : name, 170, 10);
+                ctx.restore();
+            });
+        }
+
+        function updateSpinButton() {
+            const spinButton = document.getElementById('spinButton');
+            if (spinButton) { spinButton.disabled = names.length < 2 || isSpinning; }
+        }
+
+        function spinWheel() {
+            if (isSpinning || names.length < 2) return;
+            isSpinning = true;
+            const spinButton = document.getElementById('spinButton');
+            spinButton.classList.add('spinning');
+            updateSpinButton();
+
+            canvas.style.transition = 'none';
+            currentRotation = currentRotation % 360; 
+            canvas.style.transform = `rotate(${currentRotation}deg)`;
+            void canvas.offsetWidth;
+            
+            const spins = 5 + Math.random() * 3;
+            const extraDegrees = Math.random() * 360;
+            const totalRotation = currentRotation + spins * 360 + extraDegrees;
+            
+            canvas.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+            canvas.style.transform = `rotate(${totalRotation}deg)`;
+            
+            currentRotation = totalRotation;
+
+            setTimeout(() => {
+                const finalRotation = currentRotation % 360;
+                const anglePerSegment = 360 / names.length;
+                let normalizedAngle = (360 - finalRotation) % 360; 
+                if (normalizedAngle < 0) normalizedAngle += 360;
+
+                const winnerIndex = Math.floor(normalizedAngle / anglePerSegment) % names.length;
+                const winner = names[winnerIndex];
+
+                showWinner(winner);
+                createConfetti();
+
+                isSpinning = false;
+                spinButton.classList.remove('spinning');
+                updateSpinButton();
+                
+            }, 4000);
+        }
+        // ---- نهاية دوال عجلة الحظ العامة ----
+
+        // ---- دوال عجلة الحظ داخل المسابقة ----
+        let contestWheelCanvas = null;
+        let contestWheelCtx = null;
+        let contestWheelNames = [];
+        let contestIsSpinning = false;
+        let contestCurrentRotation = 0;
+        
+        function initContestWheel() {
+            contestWheelCanvas = document.getElementById('contestWheelCanvas');
+            contestWheelCtx = contestWheelCanvas ? contestWheelCanvas.getContext('2d') : null;
+
+            const spinButton = document.getElementById('contestSpinButton');
+            if (spinButton) {
+                spinButton.addEventListener('click', spinContestWheel);
+            }
+        }
+
+        function updateContestWheelNames() {
+            const textarea = document.getElementById('contestNamesTextarea');
+            if (!textarea) return;
+            const text = textarea.value.trim();
+            contestWheelNames = text.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+            drawContestWheel();
+            document.getElementById('contestSpinButton').disabled = contestWheelNames.length < 2 || contestIsSpinning;
+        }
+        
+        function drawContestWheel() {
+            if (!contestWheelCtx || !contestWheelCanvas) return;
+            const size = contestWheelCanvas.width;
+            contestWheelCtx.clearRect(0, 0, size, size);
+            
+            if (contestWheelNames.length === 0) {
+                contestWheelCtx.fillStyle = '#f0f0f0'; contestWheelCtx.beginPath(); contestWheelCtx.arc(size/2, size/2, size/2 - 8, 0, Math.PI * 2); contestWheelCtx.fill();
+                contestWheelCtx.fillStyle = '#999'; contestWheelCtx.font = '14px Arial'; contestWheelCtx.textAlign = 'center'; contestWheelCtx.fillText('أدخل أسماء المتسابقين', size/2, size/2);
+                return;
+            }
+
+            const anglePerSegment = (Math.PI * 2) / contestWheelNames.length;
+            const startOffset = -Math.PI / 2;
+            
+            contestWheelNames.forEach((name, index) => {
+                const startAngle = startOffset + (anglePerSegment * index);
+                const endAngle = startAngle + anglePerSegment;
+                
+                contestWheelCtx.fillStyle = wheelColors[index % wheelColors.length];
+                contestWheelCtx.beginPath(); contestWheelCtx.arc(size/2, size/2, size/2 - 8, startAngle, endAngle); contestWheelCtx.lineTo(size/2, size/2); contestWheelCtx.fill();
+                
+                contestWheelCtx.save();
+                contestWheelCtx.translate(size/2, size/2);
+                contestWheelCtx.rotate(startAngle + anglePerSegment / 2);
+                contestWheelCtx.textAlign = 'right'; contestWheelCtx.fillStyle = '#ffffff'; contestWheelCtx.font = 'bold 14px Arial';
+                contestWheelCtx.shadowColor = 'rgba(0,0,0,0.3)'; contestWheelCtx.shadowBlur = 3;
+                contestWheelCtx.fillText(name.length > 10 ? name.substring(0, 10) + '...' : name, size/2 - 20, 5);
+                contestWheelCtx.restore();
+            });
+        }
+        
+        function showContestWheelModal() {
+            document.getElementById('contestWheelModal').classList.remove('hidden');
+            const textarea = document.getElementById('contestNamesTextarea');
+            const controlsDiv = document.getElementById('contestWheelControls');
+
+            // التحقق من أن المسابقة خاصة (تم الدخول عبر لوحة الإدارة)
+            const isPrivateContest = currentEntityId && currentQuizData.quiz_type === 'competition';
+
+            if (isPrivateContest) {
+                // المسابقات الخاصة: تحميل أسماء الفصل وإخفاء مربع النص
+                controlsDiv.classList.add('hidden');
+                
+                if (currentClassId) {
+                    const cls = allData.find(item => item.id === currentClassId);
+                    const students = JSON.parse(cls.students || '[]');
+                    contestWheelNames = students.map(s => s.name);
+                    
+                    if (contestWheelNames.length < 2) {
+                        showToast('يجب أن يحتوي الفصل على طالبين على الأقل لاستخدام العجلة.', true);
+                    }
+                } else {
+                    contestWheelNames = [];
+                    showToast('لم يتم إسناد فصل لهذا المعلم.', true);
+                }
+
+            } else {
+                // المسابقات العامة: إظهار مربع النص والسماح بالإدخال اليدوي
+                controlsDiv.classList.remove('hidden');
+                // تحديث العجلة بناءً على ما هو مكتوب في مربع النص يدوياً
+                updateContestWheelNames();
+            }
+
+            drawContestWheel();
+            document.getElementById('contestWinnerDisplay').textContent = '';
+            document.getElementById('contestSpinButton').disabled = contestWheelNames.length < 2 || contestIsSpinning;
+        }
+        
+        function hideContestWheelModal() {
+            document.getElementById('contestWheelModal').classList.add('hidden');
+        }
+        
+        function spinContestWheel() {
+            if (contestIsSpinning || contestWheelNames.length < 2) return;
+            
+            contestIsSpinning = true;
+            const spinButton = document.getElementById('contestSpinButton');
+            spinButton.disabled = true;
+            spinButton.classList.add('spinning');
+            
+            contestWheelCanvas.style.transition = 'none';
+            contestCurrentRotation = contestCurrentRotation % 360;
+            contestWheelCanvas.style.transform = `rotate(${contestCurrentRotation}deg)`;
+            void contestWheelCanvas.offsetWidth;
+            
+            const spins = 5 + Math.random() * 3;
+            const extraDegrees = Math.random() * 360;
+            const totalRotation = contestCurrentRotation + spins * 360 + extraDegrees;
+            
+            contestWheelCanvas.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+            contestWheelCanvas.style.transform = `rotate(${totalRotation}deg)`;
+            
+            contestCurrentRotation = totalRotation;
+
+            document.getElementById('contestWinnerDisplay').textContent = 'جاري الاختيار...';
+
+            setTimeout(() => {
+                const finalRotation = contestCurrentRotation % 360;
+                const anglePerSegment = 360 / contestWheelNames.length;
+                let normalizedAngle = (360 - finalRotation) % 360; 
+                if (normalizedAngle < 0) normalizedAngle += 360;
+
+                const winnerIndex = Math.floor(normalizedAngle / anglePerSegment) % contestWheelNames.length;
+                const winner = contestWheelNames[winnerIndex];
+
+                document.getElementById('contestWinnerDisplay').innerHTML = `🎉 الفائز هو: <strong>${winner}</strong>!`;
+                createConfetti();
+
+                contestIsSpinning = false;
+                spinButton.classList.remove('spinning');
+                spinButton.textContent = 'اختيار آخر';
+                spinButton.disabled = false;
+            }, 4000);
+        }
+        // ---- نهاية دوال عجلة الحظ داخل المسابقة ----
+
+
+        function showWinner(winner) {
+            const modal = document.getElementById('winnerModal');
+            const winnerName = document.getElementById('winnerName');
+            currentWinner = winner;
+            winnerName.textContent = winner;
+            modal.classList.add('show');
+        }
+
+        // تم إزالة دالة saveWinnerToDb لتقليل استهلاك Firebase
+        
+        function createConfetti() {
+            const colors = ['#81c784', '#64b5f6', '#ffb74d', '#e57373', '#ba68c8', '#4db6ac', '#ff8a65', '#9575cd'];
+            const confettiCount = 150;
+
+            for (let i = 0; i < confettiCount; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti-piece';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    confetti.style.width = (Math.random() * 10 + 5) + 'px';
+                    confetti.style.height = confetti.style.width;
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 20);
+            }
+        }
+        
+        function normalizeArabicText(text) {
+            if (!text) return '';
+            return text
+                .replace(/أ|إ|آ/g, 'ا')
+                .replace(/ة/g, 'ت')
+                .replace(/[ّـَ-ْ]/g, '')
+                .toLowerCase().trim();
+        }
+
+        function showCelebration(type, message, emoji) {
+            const overlay = document.getElementById('celebration-overlay');
+            const emojiEl = document.getElementById('celebration-emoji');
+            const messageEl = document.getElementById('celebration-message');
+            const closeBtn = document.getElementById('celebration-close');
+            
+            emojiEl.textContent = emoji;
+            messageEl.textContent = message;
+            
+            messageEl.style.color = type === 'success' ? '#28a745' : type === 'close' ? '#ffc107' : '#dc3545';
+            closeBtn.style.background = defaultConfig.primary_color || '#667eea'; 
+            overlay.style.display = 'flex';
+            
+            if (type === 'success') { createConfetti(); }
+            
+            closeBtn.onclick = () => { overlay.style.display = 'none'; };
+        }
+        
+        function calculateSimilarity(str1, str2) {
+            const longer = str1.length > str2.length ? str1 : str2;
+            const shorter = str1.length > str2.length ? str2 : str1;
+            
+            if (longer.length === 0) return 1.0;
+            
+            const editDistance = getEditDistance(longer, shorter);
+            return (longer.length - editDistance) / longer.length;
+        }
+        
+        function getEditDistance(str1, str2) {
+            const costs = [];
+            for (let i = 0; i <= str1.length; i++) {
+                let lastValue = i;
+                for (let j = 0; j <= str2.length; j++) {
+                    if (i === 0) {
+                        costs[j] = j;
+                    } else if (j > 0) {
+                        let newValue = costs[j - 1];
+                        if (str1.charAt(i - 1) !== str2.charAt(j - 1)) {
+                            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                        }
+                        costs[j - 1] = lastValue;
+                        lastValue = newValue;
+                    }
+                }
+                if (i > 0) costs[str2.length] = lastValue;
+            }
+            return costs[str2.length];
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            if (isError) toast.classList.add('error');
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.classList.remove('error');
+            }, 3000);
+        }
+
+        // --- منطق الشهادات المضافة حديثاً ---
+        let currentCertImageBase64 = null;
+
+        function showCertificateManagement() {
+            const select = document.getElementById('certQuizSelect');
+            select.innerHTML = '<option value="">-- اختر مسابقة لتعديل شهادتها --</option>';
+            
+            const quizzes = allData.filter(item => item.type === 'quiz' && item.entity_id === currentEntityId);
+            quizzes.forEach(q => {
+                const option = document.createElement('option');
+                option.value = q.id;
+                option.textContent = q.quiz_title;
+                select.appendChild(option);
+            });
+            
+            document.getElementById('certSettingsArea').classList.add('hidden');
+            showPage('certificateManagementPage');
+        }
+
+        function loadQuizCertSettings() {
+            const quizId = document.getElementById('certQuizSelect').value;
+            if (!quizId) {
+                document.getElementById('certSettingsArea').classList.add('hidden');
+                return;
+            }
+            
+            const quiz = allData.find(item => item.id === quizId);
+            if (quiz) {
+                document.getElementById('certSettingsArea').classList.remove('hidden');
+                document.getElementById('certTitleInput').value = quiz.cert_title || 'شهادة إتمام';
+                document.getElementById('certBodyInput').value = quiz.cert_body || 'تشهد إدارة الموقع بأن';
+                
+                const preview = document.getElementById('certImagePreview');
+                if (quiz.cert_bg) {
+                    currentCertImageBase64 = quiz.cert_bg;
+                    preview.innerHTML = `<img src="${quiz.cert_bg}" style="width:100%">`;
+                } else {
+                    currentCertImageBase64 = null;
+                    preview.innerHTML = '';
+                }
+            }
+        }
+
+        function previewCertImage() {
+            const file = document.getElementById('certBgInput').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentCertImageBase64 = e.target.result;
+                    document.getElementById('certImagePreview').innerHTML = `<img src="${currentCertImageBase64}" style="width:100%">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function saveCertSettings() {
+            const quizId = document.getElementById('certQuizSelect').value;
+            const quiz = allData.find(item => item.id === quizId);
+            if (!quiz) return;
+
+            // تحديث كائن المسابقة
+            const updatedQuiz = {
+                ...quiz,
+                cert_title: document.getElementById('certTitleInput').value,
+                cert_body: document.getElementById('certBodyInput').value,
+                cert_bg: currentCertImageBase64 // قد يكون السلسلة النصية للصورة كبيرة
+            };
+
+            const result = await window.dataSdk.update(updatedQuiz);
+            if (result.isOk) {
+                showToast('تم حفظ إعدادات الشهادة بنجاح');
+            } else {
+                showToast('فشل الحفظ. ربما حجم الصورة كبير جداً.', true);
+            }
+        }
+
+        // ----------------------------------------------------------------------
+        // 🆕 دوال إدارة التسجيل الذاتي (Enrollment)
+        // ----------------------------------------------------------------------
+
+        function updateEnrollmentCardVisibility() {
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            const cardContainer = document.getElementById('entityPageEnrollmentCard');
+            
+            if (!entity || !cardContainer) return;
+
+            const enrollConfig = JSON.parse(entity.enrollment_config || '{}');
+            
+            if (enrollConfig.status === 'enabled' || enrollConfig.status === 'auto') {
+                const requiredFields = [];
+                if (enrollConfig.req_student_phone) requiredFields.push('هاتف الطالب');
+                if (enrollConfig.req_parent_phone) requiredFields.push('هاتف ولي الأمر');
+
+                const message = enrollConfig.status === 'auto' ? '(تسجيل فوري)' : '(يحتاج اعتماد)';
+                
+                cardContainer.innerHTML = `
+                    <div class="main-card" onclick="showPage('studentEnrollmentFormPage')" style="cursor: pointer; background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%); color: white; margin-top: 20px;">
+                        <h3 style="margin: 0;">✍️ تسجيل طالب جديد ${message}</h3>
+                        <p style="margin: 5px 0;">اضغط لبدء التسجيل. (إجباري: الاسم ${requiredFields.length > 0 ? '، ' + requiredFields.join('، ') : ''})</p>
+                    </div>
+                `;
+                // تحديث نموذج التسجيل ليعكس الحقول الإجبارية
+                updateEnrollmentForm(enrollConfig);
+            } else {
+                cardContainer.innerHTML = '';
+            }
+        }
+
+        function updateEnrollmentForm(config) {
+            if (!config) return;
+            // الاسم دائما إجباري
+            document.getElementById('enroll_name').required = true; 
+            document.getElementById('enroll_student_phone').required = config.req_student_phone || false;
+            document.getElementById('enroll_parent_phone').required = config.req_parent_phone || false;
+            
+            // إضافة نجوم الإجبار
+            document.querySelector('#studentEnrollmentForm .form-group:nth-child(1) label').innerHTML = `الاسم الكامل: <span style="color:red;">*</span>`;
+            document.querySelector('#studentEnrollmentForm .form-group:nth-child(2) label').innerHTML = `هاتف الطالب: ${config.req_student_phone ? '<span style="color:red;">*</span>' : ''}`;
+            document.querySelector('#studentEnrollmentForm .form-group:nth-child(3) label').innerHTML = `هاتف ولي الأمر: ${config.req_parent_phone ? '<span style="color:red;">*</span>' : ''}`;
+
+
+            // إعادة تعيين قيم الحقول
+            document.getElementById('enroll_name').value = '';
+            document.getElementById('enroll_student_phone').value = '';
+            document.getElementById('enroll_parent_phone').value = '';
+            document.getElementById('enrollmentStatusMessage').textContent = '';
+        }
+
+
+        async function submitStudentEnrollment(event) {
+            event.preventDefault();
+            const name = document.getElementById('enroll_name').value.trim();
+            const studentPhone = document.getElementById('enroll_student_phone').value.trim();
+            const parentPhone = document.getElementById('enroll_parent_phone').value.trim();
+            const statusMsgEl = document.getElementById('enrollmentStatusMessage');
+
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            const enrollConfig = JSON.parse(entity.enrollment_config || '{}');
+            
+            if (!name) return showToast('الاسم إجباري', true);
+            
+            const enrollmentType = enrollConfig.status;
+            const isAutoEnroll = enrollmentType === 'auto';
+            const defaultClassId = isAutoEnroll ? enrollConfig.default_class_id : null;
+
+            if (isAutoEnroll && !defaultClassId) {
+                return showToast('فشل التسجيل: الفصل الافتراضي غير محدد بواسطة الإدارة.', true);
+            }
+
+            const enrollmentData = {
+                id: 'enroll_' + Date.now(),
+                type: 'pending_enrollment',
+                entity_id: currentEntityId,
+                name: name,
+                student_phone: studentPhone,
+                parent_phone: parentPhone,
+                status: enrollmentType === 'auto' ? 'accepted' : 'pending', 
+                created_at: Date.now()
+            };
+
+            if (isAutoEnroll) {
+                // 1. إضافة الطالب مباشرة إلى الفصل المحدد
+                const targetClass = allData.find(item => item.id === defaultClassId);
+                if (targetClass) {
+                    const students = JSON.parse(targetClass.students || '[]');
+                    students.push({ 
+                        id: 'std_' + enrollmentData.id, 
+                        name: name, 
+                        student_phone: studentPhone, 
+                        parent_phone: parentPhone 
+                    });
+
+                    await window.dataSdk.update({ ...targetClass, students: JSON.stringify(students) });
+                    
+                    statusMsgEl.textContent = '✅ تم تسجيلك مباشرة في الفصل بنجاح!';
+                    showToast('تم التسجيل الفوري بنجاح!');
+                } else {
+                     return showToast('فشل التسجيل التلقائي: الفصل غير موجود.', true);
+                }
+                
+            } else {
+                // 2. حفظ الطلب كمعلق (Pending)
+                const result = await window.dataSdk.create(enrollmentData);
+                if (result.isOk) {
+                    statusMsgEl.textContent = '✅ تم إرسال طلبك بنجاح. يرجى الانتظار للموافقة من الإدارة.';
+                    showToast('تم إرسال طلب التسجيل بنجاح');
+                } else {
+                    return showToast('فشل إرسال الطلب.', true);
+                }
+            }
+            
+            // مسح النموذج بعد الإرسال
+            document.getElementById('studentEnrollmentForm').reset();
+        }
+
+        // ----------------------------------------------------------------------
+        // 🆕 دوال لوحة الإدارة للإعدادات والاعتماد
+        // ----------------------------------------------------------------------
+
+        function showEnrollmentSettings() {
+            const select = document.getElementById('defaultClassSelect');
+            select.innerHTML = '<option value="">-- اختر فصلاً --</option>';
+            
+            const classes = allData.filter(item => item.type === 'class' && item.entity_id === currentEntityId);
+            classes.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls.id;
+                option.textContent = cls.name;
+                select.appendChild(option);
+            });
+            
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            const config = JSON.parse(entity.enrollment_config || '{}');
+            
+            document.getElementById('enrollmentStatus').value = config.status || 'disabled';
+            document.getElementById('req_student_phone').checked = config.req_student_phone || false;
+            document.getElementById('req_parent_phone').checked = config.req_parent_phone || false;
+            
+            if (config.default_class_id) {
+                document.getElementById('defaultClassSelect').value = config.default_class_id;
+            }
+            
+            showPage('enrollmentSettingsPage');
+        }
+
+        async function saveEnrollmentSettings() {
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            if (!entity) return;
+
+            const status = document.getElementById('enrollmentStatus').value;
+            const defaultClassId = document.getElementById('defaultClassSelect').value;
+            
+            if (status === 'auto' && !defaultClassId) {
+                return showToast('لتفعيل التسجيل الفوري، يجب تحديد فصل افتراضي.', true);
+            }
+            
+            const newConfig = {
+                status: status,
+                req_name: true, // الاسم دائماً إجباري
+                req_student_phone: document.getElementById('req_student_phone').checked,
+                req_parent_phone: document.getElementById('req_parent_phone').checked,
+                default_class_id: status === 'auto' ? defaultClassId : null
+            };
+            
+            const updatedEntity = { ...entity, enrollment_config: JSON.stringify(newConfig) };
+            const result = await window.dataSdk.update(updatedEntity);
+            
+            if (result.isOk) {
+                showToast('تم حفظ إعدادات التسجيل بنجاح.');
+                updateEnrollmentCardVisibility(); // لتحديث الواجهة العامة فوراً
+            } else {
+                showToast('فشل حفظ الإعدادات.', true);
+            }
+        }
+
+        function updatePendingCount() {
+            const pendingRequests = allData.filter(item => 
+                item.type === 'pending_enrollment' && 
+                item.entity_id === currentEntityId &&
+                item.status === 'pending'
+            );
+            const countElement = document.getElementById('pendingCount');
+            if (countElement) {
+                countElement.textContent = pendingRequests.length;
+                if (pendingRequests.length > 0) {
+                    countElement.parentElement.classList.remove('btn-warning');
+                    countElement.parentElement.classList.add('btn-danger');
+                } else {
+                    countElement.parentElement.classList.remove('btn-danger');
+                    countElement.parentElement.classList.add('btn-warning');
+                }
+            }
+        }
+
+
+        function showPendingEnrollments() {
+            const pendingList = allData.filter(item => 
+                item.type === 'pending_enrollment' && 
+                item.entity_id === currentEntityId &&
+                item.status === 'pending'
+            ).sort((a, b) => b.created_at - a.created_at);
+
+            const classes = allData.filter(item => item.type === 'class' && item.entity_id === currentEntityId);
+            const classOptions = classes.map(cls => 
+                `<option value="${cls.id}">${cls.name}</option>`
+            ).join('');
+
+            const container = document.getElementById('pendingEnrollmentList');
+            
+            if (pendingList.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">لا توجد طلبات تسجيل معلقة حالياً.</p>';
+                showPage('pendingEnrollmentsPage');
+                return;
+            }
+
+            container.innerHTML = pendingList.map(request => `
+                <div class="entity-card" style="border-right: 5px solid #ffc107;">
+                    <h4 style="margin: 0; display: flex; justify-content: space-between;">
+                        <span>👤 ${request.name}</span>
+                        <span style="font-size: 0.8em; color: #999;">تاريخ الطلب: ${new Date(request.created_at).toLocaleDateString('ar-SA')}</span>
+                    </h4>
+                    <p style="margin: 5px 0; font-size: 0.9em;">
+                        <strong>هاتف الطالب:</strong> ${request.student_phone || 'لا يوجد'} | 
+                        <strong>هاتف الولي:</strong> ${request.parent_phone || 'لا يوجد'}
+                    </p>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; align-items: center;">
+                        <select id="classSelect_${request.id}" style="flex: 2; padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                            <option value="">-- اختر فصلاً للإضافة --</option>
+                            ${classOptions}
+                        </select>
+                        <button class="btn btn-success" style="flex: 1; padding: 8px 15px;" onclick="acceptEnrollment('${request.__backendId}', '${request.id}')">قبول</button>
+                        <button class="btn btn-danger" style="flex: 1; padding: 8px 15px; background: #6c757d;" onclick="rejectEnrollment('${request.__backendId}')">رفض</button>
+                    </div>
+                </div>
+            `).join('');
+
+            showPage('pendingEnrollmentsPage');
+        }
+
+        async function acceptEnrollment(backendId, enrollmentId) {
+            const classId = document.getElementById(`classSelect_${enrollmentId}`).value;
+            if (!classId) {
+                return showToast('يجب اختيار فصل لإضافة الطالب إليه.', true);
+            }
+            
+            const enrollmentRecord = allData.find(item => item.__backendId === backendId);
+            const targetClass = allData.find(item => item.id === classId);
+
+            if (!enrollmentRecord || !targetClass) {
+                return showToast('خطأ في البيانات، يرجى تحديث الصفحة.', true);
+            }
+
+            // 1. إضافة الطالب إلى الفصل
+            const students = JSON.parse(targetClass.students || '[]');
+            students.push({
+                id: 'std_' + enrollmentRecord.id, // استخدام id سجل الطلب كجزء من id الطالب
+                name: enrollmentRecord.name,
+                student_phone: enrollmentRecord.student_phone,
+                parent_phone: enrollmentRecord.parent_phone
+            });
+
+            const updateClassResult = await window.dataSdk.update({ ...targetClass, students: JSON.stringify(students) });
+            
+            if (updateClassResult.isOk) {
+                // 2. تحديث سجل الطلب إلى 'accepted' (وحذفه لتوفير مساحة)
+                const deleteRequestResult = await window.dataSdk.delete(enrollmentRecord); 
+                
+                showToast(`تم قبول الطالب ${enrollmentRecord.name} وإضافته للفصل بنجاح!`);
+            } else {
+                showToast('فشل قبول الطالب وإضافته للفصل.', true);
+            }
+        }
+
+        async function rejectEnrollment(backendId) {
+            if (!confirm('هل أنت متأكد من رفض طلب التسجيل هذا؟ سيتم حذفه نهائياً.')) return;
+            
+            const enrollmentRecord = allData.find(item => item.__backendId === backendId);
+            if (!enrollmentRecord) return;
+            
+            const result = await window.dataSdk.delete(enrollmentRecord);
+            
+            if (result.isOk) {
+                showToast('تم رفض وحذف طلب التسجيل بنجاح.');
+            } else {
+                showToast('فشل رفض الطلب.', true);
+            }
+        }
+        // ----------------------------------------------------------------------
+
+
+        // --- منطق الفصول المضافة حديثاً ---
+        let currentClassId = null;
+
+        function showClassesManagement() {
+            renderClassesList();
+            showPage('classesManagementPage');
+        }
+
+        async function createNewClass() {
+            const name = document.getElementById('newClassName').value;
+            if (!name) return showToast('اكتب اسم الفصل', true);
+            
+            if (allData.length >= 999) return showToast('الحد الأقصى للسجلات', true);
+
+            const result = await window.dataSdk.create({
+                id: 'class_' + Date.now(),
+                type: 'class',
+                entity_id: currentEntityId,
+                name: name,
+                assigned_member_id: '', // فارغ في البداية
+                students: JSON.stringify([]) // مصفوفة فارغة للطلاب
+            });
+
+            if (result.isOk) {
+                showToast('تم إضافة الفصل');
+                document.getElementById('newClassName').value = '';
+            } else {
+                showToast('فشل الإضافة', true);
+            }
+        }
+
+        function renderClassesList() {
+            const container = document.getElementById('classesList');
+            const classes = allData.filter(item => item.type === 'class' && item.entity_id === currentEntityId);
+            
+            // جلب أعضاء الجهة لملء القائمة المنسدلة
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            const members = JSON.parse(entity.members || '[]');
+
+            if (classes.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666;">لا توجد فصول</p>';
+                return;
+            }
+
+            container.innerHTML = classes.map(cls => {
+                const students = JSON.parse(cls.students || '[]');
+                const assignedMember = members.find(m => m.id === cls.assigned_member_id);
+                const memberName = assignedMember ? assignedMember.username : 'غير مسند';
+
+                // إنشاء خيارات القائمة المنسدلة للأعضاء
+                const membersOptions = members.map(m => 
+                    `<option value="${m.id}" ${cls.assigned_member_id === m.id ? 'selected' : ''}>${m.username}</option>`
+                ).join('');
+
+                return `
+                <div class="quiz-item" style="border-right-color: #f5576c;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h4 style="margin:0;">${cls.name}</h4>
+                        <span style="font-size:0.8em; background:#eee; padding:2px 8px; border-radius:4px;">عدد الطلاب: ${students.length}</span>
+                    </div>
+                    
+                    <div style="margin: 10px 0; display: flex; align-items: center; gap: 5px;">
+                        <label style="font-size: 0.9em;">إسناد إلى معلم: (${memberName})</label>
+                        <select onchange="assignClassMember('${cls.__backendId}', this.value)" style="padding: 5px; border-radius: 5px; border: 1px solid #ddd;">
+                            <option value="">-- اختر عضواً --</option>
+                            ${membersOptions}
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="btn" onclick="openClassDetails('${cls.id}')" style="flex: 2; padding: 5px;">إدارة الطلاب</button>
+                        <button class="btn btn-secondary" onclick="openAttendanceHistory('${cls.id}')" style="flex: 2; padding: 5px;">سجل الالتزام</button>
+                        <button class="btn btn-danger" onclick="deleteClass('${cls.__backendId}')" style="flex: 1; padding: 5px;">حذف</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function assignClassMember(classBackendId, memberId) {
+            const cls = allData.find(item => item.__backendId === classBackendId);
+            if (!cls) return;
+            
+            const updatedClass = { ...cls, assigned_member_id: memberId };
+            const result = await window.dataSdk.update(updatedClass);
+            if (result.isOk) showToast('تم تحديث إسناد الفصل');
+            else showToast('فشل التحديث', true);
+        }
+
+        async function deleteClass(backendId) {
+            if(!confirm('هل أنت متأكد؟ سيتم حذف الفصل وجميع الطلاب بداخله.')) return;
+            const cls = allData.find(item => item.__backendId === backendId);
+            if(cls) await window.dataSdk.delete(cls);
+        }
+        
+        // دالة مساعدة لتنظيف رقم الهاتف
+        function formatPhoneForWhatsApp(phone) {
+            if (!phone) return '';
+            // إزالة المسافات والرموز وإضافة رمز الدولة الافتراضي (مثال: +966) إذا لم يكن موجوداً
+            phone = phone.replace(/[^\d+]/g, '');
+            if (!phone.startsWith('+')) {
+                // افتراض رقم سعودي إذا لم يكن رمز الدولة موجوداً
+                if (phone.startsWith('0')) {
+                    phone = phone.substring(1); 
+                }
+                phone = '966' + phone; // نرسل 966 بدلاً من +966 في رابط wa.me
+            } else {
+                 phone = phone.substring(1); // إزالة + إذا كان موجوداً
+            }
+            return phone;
+        }
+
+        // --- تفاصيل الفصل والطلاب ---
+        function openClassDetails(classId) {
+            currentClassId = classId;
+            const cls = allData.find(item => item.id === classId);
+            if (!cls) return;
+
+            document.getElementById('currentClassName').textContent = cls.name;
+            
+            const entity = allData.find(item => item.type === 'entity' && item.id === currentEntityId);
+            const members = JSON.parse(entity.members || '[]');
+            const teacher = members.find(m => m.id === cls.assigned_member_id);
+            document.getElementById('classTeacherName').textContent = teacher ? `المعلم المسؤول: ${teacher.username}` : 'لم يتم تعيين معلم';
+
+            renderStudentsList();
+            showPage('classDetailsPage');
+        }
+
+        function renderStudentsList() {
+            const cls = allData.find(item => item.id === currentClassId);
+            if (!cls) return;
+            const students = JSON.parse(cls.students || '[]');
+            const container = document.getElementById('studentsList');
+            
+            // جلب باقي الفصول لغرض النقل
+            const otherClasses = allData.filter(item => item.type === 'class' && item.entity_id === currentEntityId && item.id !== currentClassId);
+
+            if (students.length === 0) {
+                container.innerHTML = '<p style="text-align:center;">لا يوجد طلاب</p>';
+                return;
+            }
+
+            container.innerHTML = students.map((std, index) => {
+                const moveOptions = otherClasses.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+                const moveSelect = otherClasses.length > 0 ? `
+                    <select onchange="moveStudent('${std.id}', this.value)" style="padding: 5px; margin-right: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">نقل إلى...</option>
+                        ${moveOptions}
+                    </select>
+                ` : '';
+
+                const studentPhone = std.student_phone || '';
+                const parentPhone = std.parent_phone || '';
+                
+                return `
+                <div class="member-item" style="flex-direction: column; align-items: stretch; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap;">
+                        <strong style="font-size: 1.1em;">${std.name}</strong>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 5px;">
+                            ${moveSelect}
+                            <button class="btn btn-secondary" style="width: auto; padding: 5px 10px;" onclick="openEditStudentModal('${std.id}', '${std.name}', '${studentPhone}', '${parentPhone}')">تعديل</button>
+                            <button class="btn btn-danger" style="width: auto; padding: 5px 10px;" onclick="removeStudent('${std.id}')">حذف</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <span style="color: #666;">هاتف الطالب:</span> 
+                            <span style="font-weight: bold;">${studentPhone || 'لا يوجد'}</span>
+                            ${studentPhone ? `<a href="https://wa.me/${formatPhoneForWhatsApp(studentPhone)}" target="_blank" class="btn" style="padding: 5px 10px; width: auto; margin-right: 10px; background: #25D366; display: inline-block;">📱 واتساب</a>` : ''}
+                        </div>
+                        <div>
+                            <span style="color: #666;">هاتف ولي الأمر:</span> 
+                            <span style="font-weight: bold;">${parentPhone || 'لا يوجد'}</span>
+                            ${parentPhone ? `<a href="https://wa.me/${formatPhoneForWhatsApp(parentPhone)}" target="_blank" class="btn" style="padding: 5px 10px; width: auto; margin-right: 10px; background: #25D366; display: inline-block;">📱 واتساب</a>` : ''}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        
+        function openEditStudentModal(studentId, name, studentPhone, parentPhone) {
+             const modal = document.createElement('div');
+             modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; justify-content: center; align-items: center;';
+             
+             modal.innerHTML = `
+                 <div class="main-card" style="max-width: 450px; padding: 30px;">
+                     <h3 class="section-title" style="margin-bottom: 20px;">تعديل بيانات الطالب: ${name}</h3>
+                     
+                     <div class="form-group">
+                         <label>اسم الطالب:</label>
+                         <input type="text" id="editStdName" value="${name}">
+                     </div>
+                     <div class="form-group">
+                         <label>هاتف الطالب:</label>
+                         <input type="text" id="editStdPhone" value="${studentPhone}">
+                     </div>
+                     <div class="form-group">
+                         <label>هاتف ولي الأمر:</label>
+                         <input type="text" id="editParentPhone" value="${parentPhone}">
+                     </div>
+                     
+                     <div style="display: flex; gap: 10px; margin-top: 20px;">
+                         <button class="btn btn-success" style="flex: 1;" onclick="saveEditedStudent('${studentId}')">حفظ التعديلات</button>
+                         <button class="btn btn-secondary" style="flex: 1;" onclick="this.closest('.main-card').parentElement.remove()">إلغاء</button>
+                     </div>
+                 </div>
+             `;
+             document.body.appendChild(modal);
+        }
+        
+        async function saveEditedStudent(studentId) {
+            const newName = document.getElementById('editStdName').value.trim();
+            const newStdPhone = document.getElementById('editStdPhone').value.trim();
+            const newParentPhone = document.getElementById('editParentPhone').value.trim();
+
+            if (!newName) {
+                return showToast('يجب إدخال اسم الطالب', true);
+            }
+            
+            const cls = allData.find(item => item.id === currentClassId);
+            let students = JSON.parse(cls.students || '[]');
+            
+            const studentIndex = students.findIndex(s => s.id === studentId);
+            if (studentIndex !== -1) {
+                students[studentIndex] = {
+                    ...students[studentIndex],
+                    name: newName,
+                    student_phone: newStdPhone,
+                    parent_phone: newParentPhone
+                };
+            }
+
+            const result = await window.dataSdk.update({ ...cls, students: JSON.stringify(students) });
+            if (result.isOk) {
+                showToast('تم تحديث بيانات الطالب');
+                document.querySelector('.main-card').parentElement.remove();
+                
+                // *** 🆕 تحديث سجلات الحضور القديمة (Attendance Records) ***
+                const attendanceRecords = allData.filter(item => 
+                    item.type === 'attendance' && 
+                    item.class_id === currentClassId
+                );
+
+                for (const record of attendanceRecords) {
+                    let states = JSON.parse(record.states);
+                    const stateIndex = states.findIndex(s => s.id === studentId);
+                    
+                    if (stateIndex !== -1) {
+                        // تحديث الاسم في السجلات القديمة
+                        states[stateIndex].name = newName;
+                        
+                        await window.dataSdk.update({
+                            ...record,
+                            states: JSON.stringify(states)
+                        });
+                    }
+                }
+
+            } else {
+                showToast('فشل تحديث بيانات الطالب', true);
+            }
+        }
+
+
+        async function addStudentToClass() {
+            const name = document.getElementById('newStudentName').value;
+            const studentPhone = document.getElementById('newStudentPhone').value.trim();
+            const parentPhone = document.getElementById('newParentPhone').value.trim();
+
+            if (!name) return showToast('ادخل اسم الطالب', true);
+            
+            const cls = allData.find(item => item.id === currentClassId);
+            const students = JSON.parse(cls.students || '[]');
+            students.push({ id: 'std_' + Date.now(), name: name, student_phone: studentPhone, parent_phone: parentPhone });
+            
+            const result = await window.dataSdk.update({ ...cls, students: JSON.stringify(students) });
+            if (result.isOk) {
+                document.getElementById('newStudentName').value = '';
+                document.getElementById('newStudentPhone').value = '';
+                document.getElementById('newParentPhone').value = '';
+                showToast('تم إضافة الطالب');
+                // renderStudentsList() سيتم تشغيله بواسطة onDataChanged
+            } else {
+                showToast('فشل إضافة الطالب', true);
+            }
+        }
+
+        async function removeStudent(studentId) {
+            const cls = allData.find(item => item.id === currentClassId);
+            const students = JSON.parse(cls.students || '[]');
+            const updatedStudents = students.filter(std => std.id !== studentId);
+
+            const result = await window.dataSdk.update({ ...cls, students: JSON.stringify(updatedStudents) });
+            if (result.isOk) {
+                showToast('تم حذف الطالب');
+            } else {
+                showToast('فشل حذف الطالب', true);
+            }
+        }
+
+        async function moveStudent(studentId, targetClassId) {
+            if (!targetClassId) return;
+
+            const sourceClass = allData.find(item => item.id === currentClassId);
+            const targetClass = allData.find(item => item.id === targetClassId);
+            
+            if (!sourceClass || !targetClass) return;
+
+            const sourceStudents = JSON.parse(sourceClass.students || '[]');
+            const targetStudents = JSON.parse(targetClass.students || '[]');
+            
+            // الطالب المراد نقله
+            const studentToMove = sourceStudents.find(std => std.id === studentId);
+            
+            if (!studentToMove) return;
+
+            // إزالة من المصدر
+            const updatedSourceStudents = sourceStudents.filter(std => std.id !== studentId);
+            
+            // إضافة للهدف
+            targetStudents.push(studentToMove);
+            
+            // تنفيذ التحديث (تحديث الوثيقتين)
+            const sourceResult = await window.dataSdk.update({ ...sourceClass, students: JSON.stringify(updatedSourceStudents) });
+            const targetResult = await window.dataSdk.update({ ...targetClass, students: JSON.stringify(targetStudents) });
+
+            if (sourceResult.isOk && targetResult.isOk) {
+                showToast(`تم نقل الطالب ${studentToMove.name} إلى فصل ${targetClass.name} بنجاح`);
+            } else {
+                 showToast('فشل نقل الطالب', true);
+            }
+        }
+
+        // --- سجل الالتزام (Attendance History) ---
+        function openAttendanceHistory() {
+            if (!currentClassId) return showToast('لا يوجد فصل مسند لعرض السجل.', true);
+            renderAttendanceHistory(currentClassId);
+            showPage('attendanceHistoryPage');
+        }
+        
+        function renderAttendanceHistory(classId) {
+            const cls = allData.find(item => item.id === classId);
+            if (!cls) return;
+
+            document.getElementById('historyClassName').textContent = `الفصل: ${cls.name}`;
+            document.getElementById('historyClassName').dataset.classId = classId;
+
+            const allRecords = allData.filter(item => 
+                item.type === 'attendance' && 
+                item.class_id === classId
+            );
+
+            if (allRecords.length === 0) {
+                document.getElementById('attendanceSummary').innerHTML = '<h4>لا توجد سجلات حضور بعد.</h4>';
+                document.getElementById('attendanceRecordsList').innerHTML = '';
+                return;
+            }
+
+            const studentNames = JSON.parse(cls.students || '[]').map(s => s.name);
+            const attendanceSummary = {};
+
+            // 1. حساب الإحصائيات
+            allRecords.forEach(record => {
+                const states = JSON.parse(record.states);
+                states.forEach(student => {
+                    if (!attendanceSummary[student.name]) {
+                        attendanceSummary[student.name] = { total: 0, حاضر: 0, غائب: 0, متأخر: 0, بعذر: 0 };
+                    }
+                    attendanceSummary[student.name].total++;
+                    attendanceSummary[student.name][student.status] = (attendanceSummary[student.name][student.status] || 0) + 1;
+                });
+            });
+
+            // 2. عرض ملخص الإحصائيات
+            let summaryHtml = `
+                <h5 style="margin-top: 0;">ملخص الالتزام الكلي:</h5>
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+            `;
+            
+            Object.keys(attendanceSummary).forEach(name => {
+                const data = attendanceSummary[name];
+                const attendanceRate = ((data.حاضر / data.total) * 100).toFixed(1);
+                const color = attendanceRate < 70 ? '#dc3545' : attendanceRate < 90 ? '#ffc107' : '#28a745';
+                
+                summaryHtml += `
+                    <div style="border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                        <strong style="color: #333;">${name}:</strong>
+                        <span style="float: left; font-weight: bold; color: ${color};">${attendanceRate}%</span>
+                        <p style="font-size: 0.8em; margin: 5px 0;">حضور: ${data.حاضر} | غياب: ${data.غائب} | تأخير: ${data.متأخر}</p>
+                    </div>
+                `;
+            });
+
+            summaryHtml += `</div>`;
+            document.getElementById('attendanceSummary').innerHTML = summaryHtml;
+
+            // 3. عرض السجلات التفصيلية
+            allRecords.sort((a, b) => new Date(b.date) - new Date(a.date)); // ترتيب تنازلي حسب التاريخ
+
+            let recordsHtml = allRecords.map(record => {
+                const states = JSON.parse(record.states);
+                let detailHtml = states.map(s => {
+                    let statusColor = s.status === 'غائب' ? '#dc3545' : s.status === 'متأخر' ? '#ffc107' : '#28a745';
+                    return `<span style="font-size: 0.9em; margin-left: 15px;">${s.name}: <strong style="color: ${statusColor};">${s.status}</strong></span>`;
+                }).join('');
+                
+                return `
+                    <div class="quiz-item" style="border-right-color: #667eea; margin-bottom: 15px;">
+                        <h4 style="margin: 0; color: #333;">🗓️ سجل يوم: ${record.date}</h4>
+                        <div style="margin-top: 10px; display: flex; flex-wrap: wrap;">
+                            ${detailHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('attendanceRecordsList').innerHTML = recordsHtml;
+        }
+
+        // --- عرض الفصل للمعلم ---
+        function showTeacherClass(classId) {
+            const cls = allData.find(item => item.id === classId);
+            if (!cls) return;
+            
+            // حفظ معرف الفصل الحالي لغرض التحديث التلقائي
+            currentClassId = cls.id;
+
+            document.getElementById('teacherClassName').textContent = cls.name;
+            const students = JSON.parse(cls.students || '[]');
+            document.getElementById('teacherStudentCount').textContent = students.length;
+
+            const list = document.getElementById('teacherStudentsList');
+
+            if (students.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #666;">لا يوجد طلاب في فصلك.</p>';
+            } else {
+                // استخدام دالة renderAttendanceTable الجديدة
+                renderAttendanceTable(cls, students);
+            }
+            showPage('teacherClassViewPage');
+        }
+        
+        // --- دوال آلية التحضير الجديدة ---
+
+        /**
+         * دالة مساعدة لإنشاء سجل حالة الحضور لكل طالب
+         * @param {object} student - كائن الطالب من قائمة الفصل
+         * @param {string} status - حالة الحضور ('حاضر', 'غائب', 'متأخر', 'بعذر')
+         */
+        function createAttendanceRow(student, status = 'حاضر') {
+            const statuses = ['حاضر', 'غائب', 'متأخر', 'بعذر'];
+            
+            let optionsHtml = statuses.map(s => `
+                <option value="${s}" ${s === status ? 'selected' : ''}>${s}</option>
+            `).join('');
+
+            const studentPhone = student.student_phone || '';
+            const parentPhone = student.parent_phone || '';
+
+            return `
+                <div class="member-item" data-student-id="${student.id}" data-student-name="${student.name}" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 15px;">
+                    <strong style="flex-basis: 25%;">${student.name}</strong>
+                    <div style="flex-basis: 30%; text-align: right; font-size: 0.9em; color: #666;">
+                        الطالب: ${studentPhone || 'لا يوجد'}
+                        <br>
+                        ولي الأمر: ${parentPhone || 'لا يوجد'}
+                    </div>
+                    <select class="attendance-status-select" style="padding: 8px; border-radius: 5px; border: 1px solid #ddd; flex-basis: 20%; margin-right: 15px;">
+                        ${optionsHtml}
+                    </select>
+                    <div style="flex-basis: 25%; text-align: left;">
+                        ${parentPhone ? `<a href="https://wa.me/${formatPhoneForWhatsApp(parentPhone)}?text=نود إبلاغكم بغياب الطالب ${student.name} عن حصة اليوم." target="_blank" class="btn" style="padding: 5px 10px; width: auto; background: #25D366; display: inline-block; font-size: 0.8em; margin-right: 5px;">📱 ولي الأمر</a>` : ''}
+                         ${studentPhone ? `<a href="https://wa.me/${formatPhoneForWhatsApp(studentPhone)}?text=مرحباً بك يا ${student.name}، نود تذكيرك بالالتزام بالموعد." target="_blank" class="btn" style="padding: 5px 10px; width: auto; background: #25D366; display: inline-block; font-size: 0.8em;">📱 الطالب</a>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * دالة لعرض جدول الحضور اليومي للمعلم
+         * @param {object} cls - كائن الفصل
+         * @param {array} students - قائمة الطلاب
+         */
+        function renderAttendanceTable(cls, students) {
+            const list = document.getElementById('teacherStudentsList');
+            const todayDate = new Date().toISOString().slice(0, 10);
+            
+            // محاولة جلب سجل الحضور لليوم الحالي
+            const existingRecord = allData.find(item => 
+                item.type === 'attendance' && 
+                item.class_id === cls.id && 
+                item.date === todayDate
+            );
+
+            let initialRowsHtml = '';
+            let statusMessage = '';
+
+            if (existingRecord) {
+                const studentStates = JSON.parse(existingRecord.states);
+                initialRowsHtml = students.map(student => {
+                    const state = studentStates.find(s => s.id === student.id);
+                    return createAttendanceRow(student, state ? state.status : 'حاضر');
+                }).join('');
+                statusMessage = `<p style="color: #28a745; font-weight: bold; margin-bottom: 15px;">✅ تم حفظ الحضور لهذا اليوم (${todayDate}). يمكن التعديل.</p>`;
+            } else {
+                initialRowsHtml = students.map(student => createAttendanceRow(student)).join('');
+                statusMessage = `<p style="color: #ffc107; font-weight: bold; margin-bottom: 15px;">⚠️ لم يتم تسجيل الحضور لهذا اليوم (${todayDate}). يرجى الحفظ.</p>`;
+            }
+
+            list.innerHTML = `
+                <h4 style="margin-top: 10px;">تسجيل حضور يوم: ${todayDate}</h4>
+                ${statusMessage}
+                <div id="attendanceRowsContainer" style="max-height: 400px; overflow-y: auto;">
+                    ${initialRowsHtml}
+                </div>
+                <button class="btn btn-success" style="margin-top: 20px;" onclick="saveAttendance('${cls.id}')">
+                    💾 حفظ سجل الحضور
+                </button>
+            `;
+        }
+
+        /**
+         * دالة لحفظ سجل الحضور اليومي في Firebase
+         * @param {string} classId - معرف الفصل
+         */
+        async function saveAttendance(classId) {
+            const cls = allData.find(item => item.id === classId);
+            if (!cls) return;
+
+            const todayDate = new Date().toISOString().slice(0, 10);
+            const rows = document.querySelectorAll('#attendanceRowsContainer .member-item');
+            
+            const studentStates = Array.from(rows).map(row => {
+                return {
+                    id: row.dataset.studentId,
+                    name: row.dataset.studentName,
+                    status: row.querySelector('.attendance-status-select').value
+                };
+            });
+
+            const existingRecord = allData.find(item => 
+                item.type === 'attendance' && 
+                item.class_id === classId && 
+                item.date === todayDate
+            );
+
+            const dataToSave = {
+                class_id: classId,
+                class_name: cls.name,
+                entity_id: currentEntityId,
+                date: todayDate,
+                states: JSON.stringify(studentStates)
+            };
+
+            let result;
+            if (existingRecord) {
+                // تحديث السجل الحالي
+                result = await window.dataSdk.update({ ...dataToSave, __backendId: existingRecord.__backendId });
+            } else {
+                // إنشاء سجل جديد
+                if (allData.length >= 999) return showToast('الحد الأقصى للسجلات', true);
+                result = await window.dataSdk.create({ ...dataToSave, type: 'attendance', id: 'att_' + Date.now() });
+            }
+
+            if (result.isOk) {
+                showToast('تم حفظ سجل الحضور بنجاح!');
+            } else {
+                showToast('فشل حفظ الحضور.', true);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+ </body>
+</html>
