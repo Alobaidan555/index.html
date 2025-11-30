@@ -353,7 +353,7 @@
     <div id="enrollmentSettingsPage" class="hidden">
         <div class="main-card">
             <button class="back-btn" onclick="goBackToEntityAdmin()">← العودة</button>
-            <h2 class="section-title">إعدادات تسجيل الطلاب الذاتي</h2>
+            <h2 class="section-title">إعدادات تسجيل الطلاب الذاتي </h2>
             <p style="color: #666; margin-bottom: 20px;">قم بتفعيل التسجيل وتحديد الحقول الإجبارية.</p>
 
             <div class="form-group" style="background: #e9ecef; padding: 15px; border-radius: 8px;">
@@ -763,6 +763,7 @@
     // ----------------------------------------------------------------------------------
         const MASTER_USERNAME = 'admin';
         const MASTER_PASSWORD = 'master123';
+        const PATH_PREFIX = 'index.html#'; // 🆕 هذا هو الثابت الجديد لدعم الروابط الفريدة
         
         let allData = [];
         let currentEntityId = null;
@@ -851,33 +852,92 @@
                 showPage('superAdminLoginPage');
             });
 
-            const lastPageId = localStorage.getItem(STATE_KEY);
+            // 🆕 المنطق الجديد للتحقق من الرابط في شريط العناوين
+            const urlHash = window.location.hash.substring(1); // إزالة الـ #
             const savedEntityId = localStorage.getItem(ENTITY_KEY);
+            const lastPageId = localStorage.getItem(STATE_KEY);
             
-            if (lastPageId && lastPageId !== 'homePage') {
-                if (lastPageId === 'superAdminPage') {
+            let targetPageId = urlHash || 'homePage'; // ابدأ بالصفحة من الرابط
+            
+            // قائمة بجميع الصفحات للتحقق
+            const allPages = ['homePage', 'superAdminLoginPage', 'superAdminPage', 'entityPage', 
+                              'entityAdminLoginPage', 'entityAdminPage', 'quizzesPage', 
+                              'takeQuizPage', 'leaderboardPage', 'wheelPage', 'membersManagementPage',
+                              'addQuizPage', 'myQuizzesPage', 'participantsDetailsPage', 
+                              'certificateManagementPage', 'classesManagementPage', 'classDetailsPage', 'teacherClassViewPage',
+                              'attendanceHistoryPage', 'enrollmentSettingsPage', 'studentEnrollmentFormPage', 'pendingEnrollmentsPage'];
+
+            if (!allPages.includes(targetPageId)) {
+                targetPageId = lastPageId || 'homePage';
+            }
+
+            if (targetPageId === 'superAdminPage' || targetPageId.includes('Admin') || targetPageId.includes('Management') || targetPageId.includes('myQuizzes')) {
+                // إذا كانت صفحة تتطلب تسجيل دخول، نعود لصفحة الدخول المناسبة
+                if (targetPageId === 'superAdminPage') {
                     showToast('تمت إعادة توجيهك إلى صفحة الدخول، يجب تسجيل الدخول مرة أخرى.', true);
                     showPage('superAdminLoginPage');
-                    
                 } else if (savedEntityId) {
                     currentEntityId = savedEntityId;
-                    
-                    if (lastPageId.includes('Admin') || lastPageId.includes('Management') || lastPageId.includes('myQuizzes')) {
-                        showEntityPage();
-                        showToast('تم استعادة الجهة. يرجى تسجيل الدخول كمدير أو عضو مرة أخرى.', false);
-                    } else {
-                        showPage(lastPageId);
-                        showToast('تم استعادة آخر صفحة كنت عليها.', false);
-                    }
+                    showEntityPage();
+                    showToast('تم استعادة الجهة. يرجى تسجيل الدخول كمدير أو عضو مرة أخرى.', false);
                 } else {
                     showPage('homePage');
                 }
             } else {
-                showPage('homePage');
+                // صفحات لا تتطلب تسجيل دخول (مثل wheelPage, quizzesPage)
+                if (targetPageId.includes('Page') && savedEntityId) {
+                    currentEntityId = savedEntityId;
+                }
+                showPage(targetPageId);
+                if (targetPageId !== 'homePage') {
+                    showToast('تم استعادة الصفحة من الرابط.', false);
+                }
             }
             
             initWheel(); 
-            initContestWheel(); // تهيئة عجلة المسابقة
+            initContestWheel();
+            
+            // 🆕 إضافة معالج حدث لأزرار الرجوع/الأمام في المتصفح
+            window.addEventListener('popstate', handlePopState);
+        }
+
+        // 🆕 دالة جديدة للتعامل مع الرجوع/الأمام
+        function handlePopState(event) {
+            if (event.state && event.state.page) {
+                // نستخدم طريقة 'إظهار وإخفاء' مباشرة لعدم تحديث الـ URL مرة أخرى
+                const pages = ['homePage', 'superAdminLoginPage', 'superAdminPage', 'entityPage', 
+                              'entityAdminLoginPage', 'entityAdminPage', 'quizzesPage', 
+                              'takeQuizPage', 'leaderboardPage', 'wheelPage', 'membersManagementPage',
+                              'addQuizPage', 'myQuizzesPage', 'participantsDetailsPage', 
+                              'certificateManagementPage', 'classesManagementPage', 'classDetailsPage', 'teacherClassViewPage',
+                              'attendanceHistoryPage', 'enrollmentSettingsPage', 'studentEnrollmentFormPage', 'pendingEnrollmentsPage'];
+            
+                pages.forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+                document.getElementById(event.state.page).classList.remove('hidden');
+                
+                // تحديث بيانات الصفحة يدوياً عند العودة إليها
+                if (event.state.page === 'superAdminPage') renderEntitiesList();
+                if (event.state.page === 'entityPage') {
+                     // تأكد من وجود معرف الجهة قبل العرض
+                     const savedEntityId = localStorage.getItem(ENTITY_KEY);
+                     if (savedEntityId) {
+                         currentEntityId = savedEntityId;
+                         showEntityPage();
+                     } else {
+                         showPage('homePage');
+                     }
+                }
+                if (event.state.page === 'classesManagementPage') renderClassesList();
+                if (event.state.page === 'myQuizzesPage') renderAdminQuizzes();
+                if (event.state.page === 'membersManagementPage') renderMembersList();
+                if (event.state.page === 'wheelPage') parseNames();
+
+            } else {
+                // إذا لم يكن هناك حالة (غالباً عند العودة للصفحة الأولى)
+                showPage('homePage');
+            }
         }
 
         function updateEntitySelect() {
@@ -910,6 +970,10 @@
                 document.getElementById(id).classList.add('hidden');
             });
             document.getElementById(pageId).classList.remove('hidden');
+            
+            // 🆕 التعديل الجديد لتغيير الرابط باستخدام History API
+            // نستخدم الـ Hash (#) لضمان التوافق مع Github Pages وبيئة التطبيق أحادي الصفحة
+            history.pushState({ page: pageId }, '', `${PATH_PREFIX}${pageId}`);
             
             const excludedPages = ['homePage', 'superAdminLoginPage', 'entityAdminLoginPage', 'takeQuizPage', 'studentEnrollmentFormPage'];
             if (!excludedPages.includes(pageId)) {
@@ -949,6 +1013,8 @@
         function showAddQuizForm() {
             document.getElementById('questionsContainer').innerHTML = '';
             document.getElementById('quizTitle').value = '';
+            document.getElementById('quizType').value = 'quiz';
+            document.getElementById('quizVisibility').value = 'public';
             document.getElementById('quizTimer').value = '0';
             document.getElementById('enableCertificate').checked = false;
             const saveBtn = document.getElementById('saveQuizBtn');
